@@ -4,8 +4,17 @@
 // y hace que el frontend pueda seguir hablando "como si fuera Firestore".
 const { Pool } = require('pg');
 
+// Nota: si la connection string trae "sslmode=require" (como la que arma
+// DigitalOcean para sus bases de datos administradas), pg mezcla mal ese
+// modo con un `ssl` explícito y termina ignorando `rejectUnauthorized:
+// false`, lo que rompe la conexión contra el certificado autofirmado de
+// DigitalOcean ("self-signed certificate in certificate chain"). Sacamos
+// el parámetro sslmode de la URL para que nuestro `ssl` de abajo sea el
+// que realmente se use.
+const connectionString = (process.env.DATABASE_URL || '').replace(/([?&])sslmode=[^&]+&?/, '$1').replace(/[?&]$/, '');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: process.env.PGSSL === 'false' ? false : { rejectUnauthorized: false }
 });
 
