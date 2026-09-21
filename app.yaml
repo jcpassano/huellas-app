@@ -1,0 +1,47 @@
+# App Spec de DigitalOcean App Platform.
+# No hace falta usar este archivo a mano: la guía (DEPLOY.md) te lleva por
+# el mismo resultado clickeando en el panel de DigitalOcean. Este archivo
+# sirve si en algún momento preferís usar "doctl apps create --spec app.yaml"
+# o pegarlo en la pestaña "App Spec" del panel.
+name: huellas
+region: nyc
+services:
+  - name: web
+    github:
+      repo: TU_USUARIO/TU_REPO   # <-- reemplazar por tu repo de GitHub
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    build_command: npm install
+    run_command: npm start
+    http_port: 8080
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    envs:
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+        type: SECRET
+      - key: JWT_SECRET
+        value: "REEMPLAZAR_POR_UNA_CLAVE_LARGA_Y_RANDOM"
+        type: SECRET
+      - key: NODE_ENV
+        value: production
+      # Variables de DigitalOcean Spaces (fotos). Completalas después de
+      # crear el Space — mientras estén vacías, las fotos se guardan en
+      # disco local y se pierden en cada redeploy.
+      - key: SPACES_KEY
+        value: ""
+        type: SECRET
+      - key: SPACES_SECRET
+        value: ""
+        type: SECRET
+      - key: SPACES_BUCKET
+        value: ""
+      - key: SPACES_REGION
+        value: nyc3
+      - key: SPACES_ENDPOINT
+        value: https://nyc3.digitaloceanspaces.com
+databases:
+  - name: db
+    engine: PG
+    production: false   # "Dev Database": la forma más barata de arrancar. Ver DEPLOY.md.

@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Huellas</title>
+<meta name="description" content="Huellas — mascotas perdidas, avistamientos y comunidad de búsqueda.">
+<meta name="theme-color" content="#F5F1E7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14151B" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Huellas">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<style>
+  :root{
+    --ink:#17233E; --ink-soft:#5B6480; --ink-faint:#8C93AB;
+    --paper:#F5F1E7; --surface:#FFFFFF; --surface-2:#FBF9F3; --line:#E4DCC8;
+    --accent:#D98B2B; --accent-ink:#6B4300; --accent-soft:#FBE7C8;
+    --alert:#C9432E; --alert-soft:#F8DED8; --alert-ink:#7A2113;
+    --safe:#2F7A57; --safe-soft:#DCEEE2; --safe-ink:#184A32;
+    --radius:18px; --radius-sm:11px;
+    --shadow:0 1px 2px rgba(23,35,62,.05), 0 10px 28px -8px rgba(23,35,62,.18);
+    --font-display:'Fraunces',ui-serif,Georgia,serif;
+    --font-body:'Work Sans',system-ui,-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#F1ECDD; --ink-soft:#B9B4A4; --ink-faint:#7E7968;
+      --paper:#14151B; --surface:#1E2029; --surface-2:#252734; --line:#33333F;
+      --accent:#EFA94C; --accent-ink:#FFDFA6; --accent-soft:#4A3416;
+      --alert:#FF7B65; --alert-soft:#4A2320; --alert-ink:#FFC3B7;
+      --safe:#5FCB93; --safe-soft:#1C3B2C; --safe-ink:#AEEBC7;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -8px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F1ECDD; --ink-soft:#B9B4A4; --ink-faint:#7E7968;
+    --paper:#14151B; --surface:#1E2029; --surface-2:#252734; --line:#33333F;
+    --accent:#EFA94C; --accent-ink:#FFDFA6; --accent-soft:#4A3416;
+    --alert:#FF7B65; --alert-soft:#4A2320; --alert-ink:#FFC3B7;
+    --safe:#5FCB93; --safe-soft:#1C3B2C; --safe-ink:#AEEBC7;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -8px rgba(0,0,0,.5);
+  }
+  @font-face{font-family:'Fraunces';src:local('Fraunces');}
+  *{box-sizing:border-box;}
+  body{background:var(--paper); color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;}
+  #app-root{max-width:560px; margin:0 auto; padding:0 16px; padding-block:0; min-height:100%; display:flex; flex-direction:column;}
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; margin:0; text-wrap:balance;}
+  p{margin:0;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:15px;}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  #app a, .sheet a{color:var(--accent-ink); font-weight:600; text-decoration:none;}
+  #app a:hover, .sheet a:hover{text-decoration:underline;}
+
+  /* ---- topbar ---- */
+  .topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 0 10px; background:linear-gradient(var(--paper) 78%, transparent);}
+  .brand{display:flex; align-items:center; gap:9px;}
+  .brand .mark{width:30px; height:30px; color:var(--accent); flex:none;}
+  .brand .word{font-family:var(--font-display); font-size:21px; font-weight:700; letter-spacing:-.01em;}
+  .icon-btn{width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex:none; transition:transform .12s ease, border-color .12s ease;}
+  .icon-btn:active{transform:scale(.93);}
+  .icon-btn svg{width:18px; height:18px;}
+  .icon-btn.on{color:var(--accent-ink); background:var(--accent-soft); border-color:transparent;}
+
+  .demo-banner{display:flex; align-items:center; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+  .demo-banner svg{width:16px; height:16px; flex:none; color:var(--accent);}
+
+  /* ---- tabs ---- */
+  .segmented{display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:4px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .segmented::-webkit-scrollbar{display:none;}
+  .segmented button{flex:none; min-width:0; border:none; background:transparent; padding:9px 12px; border-radius:999px; font-size:12.5px; font-weight:600; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; gap:5px; transition:background .15s ease, color .15s ease; white-space:nowrap;}
+  .segmented button svg{width:14px; height:14px; flex:none;}
+  .segmented button.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+
+  /* ---- directory chips ---- */
+  .chip-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; -webkit-overflow-scrolling:touch;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{flex:none; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap;}
+  .chip svg{width:14px; height:14px;}
+  .chip.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  /* ---- community ---- */
+  .tip-card{display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft); border:1px solid var(--accent); border-radius:var(--radius); padding:14px; margin-bottom:18px; box-shadow:var(--shadow);}
+  .tip-icon{flex:none; width:34px; height:34px; border-radius:999px; background:var(--surface); color:var(--accent-ink); display:flex; align-items:center; justify-content:center;}
+  .tip-icon svg{width:19px; height:19px;}
+  .tip-body{flex:1; min-width:0;}
+  .tip-label{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:3px;}
+  .tip-text{font-size:13.5px; line-height:1.45; color:var(--ink);}
+  .stat-row{display:flex; gap:10px; margin-bottom:20px;}
+  .stat-tile{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow);}
+  .stat-num{font-family:var(--font-mono); font-size:26px; font-weight:500; color:var(--accent-ink); font-variant-numeric:tabular-nums;}
+  .stat-label{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .section-title{font-size:15px; display:flex; align-items:center; gap:7px; margin-bottom:10px;}
+  .section-title svg{width:16px; height:16px; color:var(--accent);}
+  .rank-list{display:flex; flex-direction:column; gap:2px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);}
+  .rank-row{display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line);}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-pos{flex:none; width:26px; height:26px; border-radius:999px; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700;}
+  .rank-pos.gold{background:#E8B54A; color:#3A2600;}
+  .rank-pos.silver{background:#C7CDD6; color:#2B2F36;}
+  .rank-pos.bronze{background:#CE8E5C; color:#3A2000;}
+  .rank-name{flex:1; font-weight:600; font-size:13.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; flex-direction:column; gap:1px;}
+  .rank-sub{font-size:11.5px; color:var(--ink-soft); font-weight:500;}
+  .rank-prize{flex:none; font-size:11.5px; color:var(--accent-ink); font-weight:700; text-align:right; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  /* ---- prize table ---- */
+  .prize-table-wrap{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto;}
+  .prize-table{width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap;}
+  .prize-table th, .prize-table td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--line);}
+  .prize-table th{color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; background:var(--surface-2);}
+  .prize-table td{white-space:normal;}
+  .prize-table tbody tr:last-child td{border-bottom:none;}
+  .prize-table td:first-child{color:var(--accent-ink); font-weight:700;}
+  .standalone-hint{font-size:11.5px; color:var(--ink-faint); font-weight:400; line-height:1.5;}
+
+  main{flex:1; padding-bottom:36px;}
+  .screen-title{font-size:23px; margin-bottom:2px;}
+  .screen-sub{color:var(--ink-soft); font-size:13.5px; margin-bottom:16px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+
+  /* ---- pantalla de login / registro ---- */
+  .auth-wrap{max-width:360px; margin:8vh auto 0; padding:8px 4px 40px;}
+  .auth-logo{width:56px; height:56px; margin:0 auto 14px; border-radius:16px; background:var(--accent-soft); color:var(--accent-ink); display:flex; align-items:center; justify-content:center;}
+  .auth-logo svg{width:30px; height:30px;}
+  .link-btn{background:none; border:none; padding:0; color:var(--accent-ink); font-weight:600; font-size:13.5px; text-decoration:underline; text-underline-offset:2px;}
+  .back-link{display:inline-flex; align-items:center; gap:4px; background:none; border:none; padding:0; margin-bottom:14px; color:var(--ink-soft); font-weight:600; font-size:13.5px; font-family:var(--font-body);}
+  .back-link svg{width:16px; height:16px; transform:rotate(90deg);}
+  .menu-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+  .menu-card{display:flex; flex-direction:column; align-items:flex-start; gap:8px; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px; box-shadow:var(--shadow); font-family:var(--font-body);}
+  .menu-card-hero{grid-column:1/-1; flex-direction:row; align-items:center; gap:14px; background:var(--accent-soft); border-color:var(--accent-soft);}
+  .menu-card-hero .menu-icon{background:var(--surface); margin-bottom:0;}
+  .menu-icon{width:38px; height:38px; border-radius:10px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--accent-ink); flex:none; margin-bottom:2px;}
+  .menu-icon svg{width:19px; height:19px;}
+  .menu-card-hero .menu-icon svg{width:22px; height:22px;}
+  .menu-title{font-weight:700; font-size:14.5px; color:var(--ink); line-height:1.25;}
+  .menu-card-hero .menu-title{font-size:16px;}
+  .menu-sub{font-size:12.5px; color:var(--ink-soft);}
+
+  /* ---- cards ---- */
+  .card-list{display:flex; flex-direction:column; gap:12px;}
+  .pet-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; position:relative; overflow:hidden;}
+  .pet-card.is-example::before{content:"EJEMPLO"; position:absolute; top:10px; right:-30px; transform:rotate(35deg); background:var(--accent); color:#2a1a00; font-size:10px; font-weight:700; letter-spacing:.06em; padding:3px 34px; box-shadow:var(--shadow);}
+  .pet-top{display:flex; gap:12px;}
+  .avatar{width:60px; height:60px; border-radius:14px; flex:none; background:var(--surface-2); border:1px solid var(--line); object-fit:cover; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink-faint); overflow:hidden;}
+  .pet-info{flex:1; min-width:0;}
+  .pet-name-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pet-name{font-family:var(--font-display); font-size:18px; font-weight:700;}
+  .badge{font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:3px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:4px;}
+  .badge svg{width:10px; height:10px; flex:none;}
+  .badge-lost{background:var(--alert-soft); color:var(--alert-ink);}
+  .badge-lost::before{content:""; width:6px; height:6px; border-radius:999px; background:var(--alert); animation:pulse 1.6s ease-in-out infinite;}
+  .badge-safe{background:var(--safe-soft); color:var(--safe-ink);}
+  .pet-breed{color:var(--ink-soft); font-size:13px; margin-top:1px;}
+  .pet-meta{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:12.5px; color:var(--ink-soft);}
+  .pet-meta span{display:inline-flex; align-items:center; gap:4px;}
+  .pet-meta svg{width:13px; height:13px; flex:none;}
+  .pet-desc{font-size:13.5px; color:var(--ink-soft); margin-top:10px; line-height:1.5;}
+  .card-actions{display:flex; gap:8px; margin-top:12px;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  /* ---- buttons ---- */
+  .btn{border-radius:999px; border:1px solid transparent; padding:10px 16px; font-size:13.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:transform .1s ease, opacity .1s ease;}
+  .btn svg{width:15px; height:15px;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--alert); color:#fff;}
+  .btn-primary.safe{background:var(--safe);}
+  .btn-accent{background:var(--accent); color:#2a1a00;}
+  .btn-secondary{background:var(--surface-2); color:var(--ink); border-color:var(--line);}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border-color:var(--line);}
+  .btn-block{width:100%;}
+  .btn[disabled]{opacity:.5; pointer-events:none;}
+  .btn-sm{padding:7px 12px; font-size:12.5px;}
+
+  /* ---- empty state ---- */
+  .empty{border:1px dashed var(--line); border-radius:var(--radius); padding:22px 18px; text-align:center; color:var(--ink-soft); font-size:13.5px; margin-bottom:16px;}
+  .empty svg{width:26px; height:26px; color:var(--accent); margin-bottom:8px;}
+
+  /* ---- mine screen ---- */
+  .mine-header{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .status-switch{display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; padding:4px; font-size:12px; font-weight:700;}
+  .status-switch button{border:none; background:transparent; padding:6px 11px; border-radius:999px; color:var(--ink-soft);}
+  .status-switch button.on-safe{background:var(--safe); color:#fff;}
+  .status-switch button.on-lost{background:var(--alert); color:#fff;}
+  .owner-row{display:flex; justify-content:flex-end; gap:6px; margin-top:10px;}
+  .sightings{margin-top:12px; border-top:1px dashed var(--line); padding-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .sightings-title{font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-faint); display:flex; align-items:center; gap:6px;}
+  .sighting-item{background:var(--surface-2); border-radius:var(--radius-sm); padding:9px 11px; font-size:12.5px;}
+  .sighting-item .row1{display:flex; justify-content:space-between; gap:8px; color:var(--ink-soft); font-weight:600;}
+  .sighting-item .note{margin-top:3px; color:var(--ink);}
+  .sighting-item a{color:var(--accent-ink); font-weight:600;}
+
+  .fab{position:fixed; right:calc(50% - 280px + 16px); bottom:calc(24px + env(safe-area-inset-bottom,0px)); width:54px; height:54px; border-radius:999px; background:var(--accent); color:#2a1a00; border:none; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; z-index:30;}
+  @media (max-width:592px){ .fab{right:20px;} }
+  .fab svg{width:24px; height:24px;}
+
+  /* ---- sheets / modals ---- */
+  .backdrop{position:fixed; inset:0; background:rgba(20,17,10,.42); z-index:40; display:flex; align-items:flex-end; justify-content:center; padding:0;}
+  .sheet{background:var(--paper); width:100%; max-width:560px; border-radius:22px 22px 0 0; max-height:88vh; overflow-y:auto; padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px)); box-shadow:0 -10px 30px rgba(0,0,0,.25);}
+  .sheet-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .sheet-title{font-size:19px;}
+  .sheet-pet{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:9px 11px; margin-bottom:14px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:5px;}
+  .field .hint{font-size:11.5px; color:var(--ink-faint); font-weight:400; margin-top:4px;}
+  .field input[type=text], .field input[type=tel], .field input[type=number], .field select, .field textarea{
+    width:100%; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:11px; padding:10px 12px; font-size:14.5px;
+  }
+  .field textarea{resize:vertical; min-height:64px;}
+  .field-row{display:flex; gap:10px;}
+  .checkbox-row{display:flex; flex-wrap:wrap; gap:10px 16px; margin:4px 0 14px;}
+  .checkbox-field{display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; color:var(--ink);}
+  .checkbox-field input{width:17px; height:17px; accent-color:var(--accent);}
+  .field-row .field{flex:1;}
+  .photo-pick{display:flex; align-items:center; gap:12px;}
+  .photo-pick .avatar{width:54px; height:54px; cursor:pointer;}
+  .photo-grid{display:flex; flex-wrap:wrap; gap:8px;}
+  .photo-tile{position:relative; width:64px; height:64px; border-radius:12px; overflow:hidden; background:var(--surface-2); border:1px solid var(--line); flex:none; padding:0;}
+  .photo-tile img{width:100%; height:100%; object-fit:cover; display:block;}
+  .photo-tile.add-tile{display:flex; align-items:center; justify-content:center; border:1.5px dashed var(--line); color:var(--ink-faint); cursor:pointer;}
+  .photo-tile.add-tile svg{width:22px; height:22px;}
+  .remove-photo{position:absolute; top:3px; right:3px; width:19px; height:19px; border-radius:999px; background:rgba(20,20,20,.6); color:#fff; display:flex; align-items:center; justify-content:center; border:none; padding:0;}
+  .remove-photo svg{width:11px; height:11px;}
+  .photo-strip{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .photo-strip-item{width:44px; height:44px; border-radius:9px; overflow:hidden; border:1px solid var(--line); flex:none; display:block;}
+  .photo-strip-item img{width:100%; height:100%; object-fit:cover; display:block;}
+  .loc-box{border:1px solid var(--line); border-radius:var(--radius-sm); padding:12px; background:var(--surface);}
+  .loc-status{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;}
+  .loc-status svg{width:16px; height:16px; color:var(--accent);}
+  .loc-coords{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  .manual-toggle{margin-top:8px;}
+  .sheet-footer{display:flex; gap:10px; margin-top:6px;}
+  .sheet-footer .btn{flex:1;}
+
+  /* ---- toast ---- */
+  #toast-root{position:fixed; left:0; right:0; bottom:calc(18px + env(safe-area-inset-bottom,0px)); display:flex; justify-content:center; z-index:60; pointer-events:none;}
+  .toast{background:var(--ink); color:var(--paper); font-size:13px; font-weight:600; padding:11px 16px; border-radius:999px; box-shadow:var(--shadow); max-width:86%; text-align:center;}
+
+  .spinner{width:16px; height:16px; border-radius:999px; border:2px solid rgba(0,0,0,.15); border-top-color:currentColor; animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  [hidden]{display:none!important;}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+</head>
+<body>
+<div id="app-root">
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark"></span>
+      <span class="word">Huellas</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="icon-btn" id="logout-btn" data-action="logout" title="Cerrar sesión" aria-label="Cerrar sesión" hidden></button>
+      <button class="icon-btn" id="info-btn" data-action="info-open" title="Cómo funciona" aria-label="Cómo funciona"></button>
+    </div>
+  </div>
+  <main id="app"></main>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ ICONS ============ */
+  var ICONS = {
+    paw:'<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="16.2" rx="5.1" ry="4.1"/><ellipse cx="5.3" cy="8.6" rx="2.15" ry="2.7"/><ellipse cx="10.1" cy="5.1" rx="2" ry="2.6"/><ellipse cx="14.6" cy="5.2" rx="2" ry="2.6"/><ellipse cx="19" cy="8.8" rx="2.15" ry="2.7"/></svg>',
+    pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.4-7-11.6A7 7 0 0 1 19 9.4C19 14.6 12 21 12 21z"/><circle cx="12" cy="9.4" r="2.4"/></svg>',
+    bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.2a6 6 0 0 1 12 0c0 4.1 1.4 5.6 2 6.6H4c.6-1 2-2.5 2-6.6Z"/><path d="M9.5 17.3a2.5 2.5 0 0 0 5 0"/></svg>',
+    bellOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.2a6 6 0 0 1 10.2-4.3M18 8.2c.3.7.5 1.6.5 2.6 0 4.1 1.4 5.6 2 6.6H7"/><path d="M9.5 17.3a2.5 2.5 0 0 0 5 0"/><path d="M3 3l18 18"/></svg>',
+    camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3.2L8.7 6h6.6L16.8 8H20a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.2" r="3.4"/></svg>',
+    chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0 0-3l-1-1a2.1 2.1 0 0 0-3 0L4 16v4Z"/><path d="M13.5 5.5l4 4"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>',
+    info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".2" fill="currentColor" stroke-width="2.4"/></svg>',
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    ruler:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5l4.5-4.5M9.5 20l10.5-10.5-6-6L3.5 14 9.5 20Z"/><path d="M9 14l1.6-1.6M12.2 10.8l1.6-1.6M14 15l1.6-1.6"/></svg>',
+    eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    house:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/></svg>',
+    book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5v-13Z"/></svg>',
+    vet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    food:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5a8.5 4.4 0 0 0 17 0"/><path d="M3.5 11.5a8.5 4.4 0 0 1 17 0"/><path d="M3.5 11.5V10a8.5 4.4 0 0 1 17 0v1.5"/></svg>',
+    alertTri:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 4.2 2.7 18a1.6 1.6 0 0 0 1.4 2.4h15.8a1.6 1.6 0 0 0 1.4-2.4L13.4 4.2a1.6 1.6 0 0 0-2.8 0Z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".25" fill="currentColor" stroke-width="2.2"/></svg>',
+    heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.8-4.9-10-9.4C.4 7.6 2.4 4 6 4c2 0 3.6 1.1 4.5 2.6C11.4 5.1 13 4 15 4c3.6 0 5.6 3.6 4 7.1-2.2 4.5-10 9.4-10 9.4Z"/></svg>',
+    dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+    phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A17 17 0 0 1 4 5.6 1.5 1.5 0 0 1 5.5 3.5Z"/></svg>',
+    trophy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 5H4.5A1.5 1.5 0 0 0 3 6.5C3 8.4 4.4 10 6.5 10M17 5h2.5A1.5 1.5 0 0 1 21 6.5C21 8.4 19.6 10 17.5 10"/><path d="M9.5 18.5h5M12 14v4.5"/><path d="M8.5 21h7"/></svg>',
+    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.5 14.2c2.4.4 4.5 2.5 4.5 5.8"/></svg>',
+    sparkle:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5c.5 3.2 1.4 5 2.7 6.3 1.3 1.3 3.1 2.2 6.3 2.7-3.2.5-5 1.4-6.3 2.7-1.3 1.3-2.2 3.1-2.7 6.3-.5-3.2-1.4-5-2.7-6.3C7.9 13.9 6.1 13 2.9 12.5c3.2-.5 5-1.4 6.3-2.7 1.3-1.3 2.2-3.1 2.7-6.3Z"/></svg>',
+    bulb:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-3.8 11.8c.6.45 1 1.15 1 1.95V17h5.6v-.25c0-.8.4-1.5 1-1.95A6.5 6.5 0 0 0 12 3Z"/></svg>',
+    store:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l1.4 5.2a2.3 2.3 0 0 1-4.4 1.1 2.3 2.3 0 0 1-4.3 0 2.3 2.3 0 0 1-4.3 0 2.3 2.3 0 0 1-4.4-1.1L4 4Z"/><path d="M5.5 10.8V20h13v-9.2"/><path d="M10 20v-5.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"/></svg>',
+    mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg>',
+    kennel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12 12 4.5 20.5 12"/><path d="M5.5 10.5V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-8.5"/><path d="M9.5 20v-5a2.5 2.5 0 0 1 5 0v5"/></svg>',
+    adopt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><path d="M12 17.8s-2.3-1.4-2.3-3a1.3 1.3 0 0 1 2.3-.85A1.3 1.3 0 0 1 14.3 14.8c0 1.6-2.3 3-2.3 3Z" fill="currentColor" stroke="none"/></svg>',
+    cemetery:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V11a5 5 0 0 1 10 0v10"/><path d="M7 21h10"/><path d="M12 8.5v4M10 10.5h4"/></svg>',
+    logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M15 16l5-4-5-4"/><path d="M20 12H9"/></svg>'
+  };
+  function icon(name){ return ICONS[name] || ''; }
+
+  /* ============ HELPERS ============ */
+  function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function esc(s){ var d=document.createElement('div'); d.textContent = (s==null?'':String(s)); return d.innerHTML; }
+  function nowIso(){ return new Date().toISOString(); }
+  function byFieldDesc(field){
+    return function(a,b){
+      var av = a && a[field] ? a[field] : '';
+      var bv = b && b[field] ? b[field] : '';
+      return av < bv ? 1 : (av > bv ? -1 : 0);
+    };
+  }
+
+  function timeAgo(iso){
+    if(!iso) return '';
+    var diff = Date.now() - new Date(iso).getTime();
+    var min = Math.floor(diff/60000);
+    if(min < 1) return 'recién';
+    if(min < 60) return 'hace ' + min + ' min';
+    var hr = Math.floor(min/60);
+    if(hr < 24) return 'hace ' + hr + ' h';
+    var d = Math.floor(hr/24);
+    if(d < 7) return 'hace ' + d + ' d';
+    return new Date(iso).toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+  }
+
+  function formatDuration(fromIso, toIso){
+    if(!fromIso || !toIso) return null;
+    var ms = new Date(toIso).getTime() - new Date(fromIso).getTime();
+    if(ms < 0) ms = 0;
+    var min = Math.round(ms/60000);
+    if(min < 60) return min + ' min';
+    var hr = Math.round(min/60);
+    if(hr < 48) return hr + ' h';
+    var d = Math.round(hr/24);
+    return d + ' día' + (d===1?'':'s');
+  }
+
+  var SEARCH_RADIUS_KM = 30;
+  function distanceKm(a,b){
+    if(!a||!b||a.lat==null||b.lat==null) return null;
+    var R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+    var s1=Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return 2*R*Math.asin(Math.sqrt(Math.min(1,s1)));
+  }
+  function formatDistance(km){
+    if(km==null) return null;
+    if(km < 1) return Math.round(km*1000) + ' m';
+    return (Math.round(km*10)/10) + ' km';
+  }
+  function mapsLink(lat,lng){ return 'https://www.google.com/maps?q=' + lat + ',' + lng; }
+  function initials(name){ return (name||'?').trim().slice(0,1).toUpperCase(); }
+
+  function getLocation(){
+    return new Promise(function(resolve,reject){
+      if(!('geolocation' in navigator)) { reject(new Error('unsupported')); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ resolve({lat:pos.coords.latitude, lng:pos.coords.longitude}); },
+        function(err){ reject(err); },
+        {enableHighAccuracy:true, timeout:10000, maximumAge:60000}
+      );
+    });
+  }
+
+  function showToast(msg){
+    var root = document.getElementById('toast-root');
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    root.appendChild(el);
+    setTimeout(function(){ el.style.transition='opacity .3s ease'; el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 320); }, 2600);
+  }
+
+  /* ============ BACKEND PROPIO (reemplaza window.claude.use) ============
+     La app habla con /api/... en el mismo servidor que la sirve. Esta capa
+     imita la formita de "colección/documento" que ya usa el resto del
+     código (igual que antes), para no tener que tocar el resto del archivo. */
+  var API_BASE = '';
+  var TOKEN_KEY = 'huellas_token';
+  function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
+  function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+
+  function apiFetch(path, opts){
+    opts = opts || {};
+    var headers = Object.assign({}, opts.headers||{});
+    var token = getToken();
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+    return fetch(API_BASE + path, Object.assign({}, opts, {headers: headers})).then(function(res){
+      if(res.status === 401){
+        setToken(null);
+        state.currentUser = null; state.db = null; state.user = null; state.assets = null;
+        state.authView = 'login';
+        state.authError = 'Tu sesión venció. Iniciá sesión de nuevo.';
+        render();
+      }
+      return res.json()['catch'](function(){ return {}; }).then(function(body){
+        if(!res.ok){ var err = new Error((body && body.error) || 'No se pudo completar la acción.'); throw err; }
+        return body;
+      });
+    });
+  }
+
+  function makeDbClient(){
+    function collectionRef(name){
+      var filters = [];
+      var limitN = 200;
+      var ref = {
+        where: function(field, op, val){ filters.push([field, op, val]); return ref; },
+        limit: function(n){ limitN = n; return ref; },
+        doc: function(id){ return docRef(name, id); },
+        onSnapshot: function(cb, errCb){
+          var stopped = false, knownIds = null;
+          function toDocShape(d){ var data = Object.assign({}, d); delete data.id; return { id: d.id, data: function(){ return data; } }; }
+          function poll(){
+            if(stopped) return;
+            var qs = '?filters=' + encodeURIComponent(JSON.stringify(filters)) + '&limit=' + limitN;
+            apiFetch('/api/collections/' + name + qs).then(function(body){
+              var docs = body.docs || [];
+              var idSet = {}, added = [];
+              docs.forEach(function(d){ idSet[d.id] = true; if(knownIds && !knownIds[d.id]) added.push(d); });
+              knownIds = idSet;
+              cb({
+                docs: docs.map(toDocShape),
+                docChanges: function(){ return added.map(function(d){ return {type:'added', doc: toDocShape(d)}; }); }
+              });
+            })['catch'](function(err){ if(errCb) errCb(err); });
+          }
+          poll();
+          var interval = setInterval(poll, 15000);
+          return function(){ stopped = true; clearInterval(interval); };
+        }
+      };
+      return ref;
+    }
+    function docRef(name, id){
+      var path = '/api/collections/' + name + '/' + encodeURIComponent(id);
+      return {
+        set: function(body){ return apiFetch(path, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); },
+        update: function(body){ return apiFetch(path, {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); },
+        'delete': function(){ return apiFetch(path, {method:'DELETE'}); }
+      };
+    }
+    return { collection: collectionRef };
+  }
+
+  function makeUserClient(){
+    return {
+      id: function(){ return Promise.resolve(state.currentUser ? state.currentUser.id : null); },
+      profiles: function(ids){
+        if(!ids || !ids.length) return Promise.resolve({});
+        return apiFetch('/api/auth/users?ids=' + encodeURIComponent(ids.join(',')));
+      }
+    };
+  }
+
+  function makeAssetsClient(){
+    return {
+      upload: function(file){
+        var fd = new FormData();
+        fd.append('file', file);
+        var headers = {};
+        var token = getToken();
+        if(token) headers['Authorization'] = 'Bearer ' + token;
+        return fetch(API_BASE + '/api/uploads', {method:'POST', headers: headers, body: fd}).then(function(res){
+          return res.json().then(function(body){
+            if(!res.ok) throw new Error(body.error || 'No se pudo subir la foto.');
+            return body;
+          });
+        });
+      }
+    };
+  }
+
+  function afterLogin(user, token){
+    setToken(token);
+    state.currentUser = user;
+    state.myId = user.id;
+    state.db = makeDbClient();
+    state.user = makeUserClient();
+    state.assets = makeAssetsClient();
+    state.authError = '';
+    render();
+    initData();
+  }
+
+  function logout(){
+    setToken(null);
+    state.currentUser = null; state.myId = null;
+    state.db = null; state.user = null; state.assets = null;
+    state.authView = 'login'; state.authError = '';
+    render();
+  }
+
+  function tryResumeSession(){
+    var token = getToken();
+    if(!token){ state.authView = 'login'; render(); return; }
+    apiFetch('/api/auth/me').then(function(body){
+      afterLogin(body.user, token);
+    })['catch'](function(){
+      setToken(null);
+      state.authView = 'login';
+      render();
+    });
+  }
+
+  function renderAuthScreen(){
+    var isRegister = state.authView === 'register';
+    var html = '';
+    html += '<div class="auth-wrap">';
+    html += '<div class="auth-logo">' + icon('paw') + '</div>';
+    html += '<h2 class="screen-title" style="text-align:center;">' + (isRegister ? 'Creá tu cuenta' : 'Iniciá sesión') + '</h2>';
+    html += '<div class="screen-sub" style="justify-content:center;">Huellas: mascotas perdidas y comunidad de búsqueda.</div>';
+    if(state.authError){ html += '<div class="hint" style="color:var(--alert); font-weight:600; margin-bottom:10px; text-align:center;">' + esc(state.authError) + '</div>'; }
+    html += '<form id="auth-form" novalidate>';
+    if(isRegister){
+      html += '<div class="field"><label for="au-name">Tu nombre</label><input type="text" id="au-name" placeholder="Como querés que te vean en Huellas"></div>';
+    }
+    html += '<div class="field"><label for="au-email">Email</label><input type="email" id="au-email" placeholder="vos@email.com" autocomplete="username"></div>';
+    html += '<div class="field"><label for="au-password">Contraseña</label><input type="password" id="au-password" placeholder="Al menos 6 caracteres" autocomplete="' + (isRegister?'new-password':'current-password') + '"></div>';
+    html += '<button type="submit" class="btn btn-accent btn-block" id="auth-submit-btn">' + (isRegister ? icon('check')+'Crear cuenta' : icon('check')+'Entrar') + '</button>';
+    html += '</form>';
+    html += '<button type="button" class="link-btn" style="margin-top:16px; display:block; width:100%; text-align:center;" data-action="auth-switch">' +
+      (isRegister ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Creá una') +
+    '</button>';
+    html += '</div>';
+    return html;
+  }
+
+  /* ============ EXAMPLE DATA (shown only when real data is empty) ============ */
+  var EXAMPLE_PETS = [
+    {id:'ex1', example:true, name:'Rocky', species:'Perro', breed:'Mestizo', color:'Marrón y blanco', size:'Mediano',
+     description:'Tiene una mancha en forma de corazón en el pecho. Muy sociable, se acerca si lo llamás por su nombre.',
+     status:'perdida', photoUrl:null,
+     lastSeen:{lat:-34.6037, lng:-58.3816, timestamp:new Date(Date.now()-3*3600*1000).toISOString()},
+     contactName:'Ejemplo', contactPhone:''},
+    {id:'ex2', example:true, name:'Mimi', species:'Gato', breed:'Siamés', color:'Crema y gris', size:'Pequeño',
+     description:'Collar rojo sin chapa. Es asustadiza con los desconocidos, mejor no perseguirla.',
+     status:'perdida', photoUrl:null,
+     lastSeen:{lat:-34.6090, lng:-58.3860, timestamp:new Date(Date.now()-26*3600*1000).toISOString()},
+     contactName:'Ejemplo', contactPhone:''}
+  ];
+  var EXAMPLE_CONTACTS = [
+    {id:'ec1', example:true, category:'veterinarias', name:'Veterinaria San Martín', phone:'11 4555-0110', address:'Av. San Martín 1450', notes:'Abierto todos los días, 9 a 20 h.'},
+    {id:'ec2', example:true, category:'emergencias', name:'Guardia veterinaria 24 h', phone:'11 4555-0199', address:'', notes:'Para urgencias fuera de horario.'},
+    {id:'ec3', example:true, category:'alimentacion', name:'Pet Shop El Hueso Feliz', phone:'11 4555-0177', address:'Av. Rivadavia 3200', notes:'Tienen el balanceado que come Rocky.'}
+  ];
+  var EXAMPLE_BUSINESSES = [
+    {id:'eb1', example:true, category:'veterinarias', name:'Veterinaria San Martín', responsibleName:'Dra. Laura Gómez', email:'contacto@vetsanmartin.example', phone:'11 4555-0110', description:'Clínica veterinaria general, vacunación y urgencias de lunes a sábado.', photoUrl:null},
+    {id:'eb2', example:true, category:'alimentacion', name:'Pet Shop El Hueso Feliz', responsibleName:'Martín Ibáñez', email:'hola@elhuesofeliz.example', phone:'11 4555-0177', description:'Alimento balanceado, accesorios y baño para perros y gatos.', photoUrl:null}
+  ];
+  var EXAMPLE_ADOPTIONS = [
+    {id:'ea1', example:true, name:'Toby', species:'Perro', breed:'Mestizo', age:'2 años', description:'Muy juguetón y bueno con chicos. Ya sabe caminar con correa.', neutered:true, vaccinated:true, dewormed:true, contactName:'Refugio Huellitas', contactPhone:'11 4555-0133', photoUrl:null},
+    {id:'ea2', example:true, name:'Luna', species:'Gato', breed:'Mestiza', age:'8 meses', description:'Tranquila, ideal para depto. Todavía un poco tímida con desconocidos.', neutered:true, vaccinated:true, dewormed:false, contactName:'Refugio Huellitas', contactPhone:'11 4555-0133', photoUrl:null}
+  ];
+  var EXAMPLE_DONATION_CONFIG = {mpAlias:'huellas.colabora', paypalAlias:'colaborar@huellas.example'};
+
+  var CATEGORIES = [
+    {key:'veterinarias', label:'Veterinarias', icon:'vet', searchQuery:'veterinarias'},
+    {key:'alimentacion', label:'Alimentación', icon:'food', searchQuery:'alimento para mascotas pet shop'},
+    {key:'emergencias', label:'Emergencias', icon:'alertTri', searchQuery:'veterinaria de urgencias 24 horas'},
+    {key:'criaderos', label:'Criaderos', icon:'kennel', searchQuery:'criadero de mascotas'},
+    {key:'adopciones', label:'Adopciones', icon:'adopt', searchQuery:'refugio de adopción de mascotas'},
+    {key:'cementerios', label:'Cementerios', icon:'cemetery', searchQuery:'cementerio de mascotas'},
+    {key:'novio_novia', label:'Novio / Novia', icon:'heart'},
+    {key:'otros', label:'Otros', icon:'dots'}
+  ];
+  function categoryMeta(key){ return CATEGORIES.filter(function(c){ return c.key===key; })[0] || CATEGORIES[CATEGORIES.length-1]; }
+  var BUSINESS_CATEGORIES = CATEGORIES.filter(function(c){ return c.key !== 'novio_novia'; });
+
+  /* Puntos y premios: ficticios, solo para reconocer a quienes reportan
+     avistamientos — no representan premios reales ni canjeables. */
+  var POINTS_PER_SIGHTING = 10;
+  var PRIZE_TIERS = [
+    {minPoints:150, name:'Guardián de Huellas', prize:'Insignia platino + mención destacada en Comunidad'},
+    {minPoints:80,  name:'Rastreador Experto',  prize:'Insignia dorada en tu perfil'},
+    {minPoints:40,  name:'Ángel de Barrio',     prize:'Insignia plateada'},
+    {minPoints:10,  name:'Ayudante Solidario',  prize:'Insignia de bronce'},
+    {minPoints:1,   name:'Primeros Pasos',      prize:'Insignia de bienvenida'},
+    {minPoints:0,   name:'Sin puntos todavía',  prize:'—'}
+  ];
+  function prizeForPoints(points){
+    for(var i=0;i<PRIZE_TIERS.length;i++){ if(points >= PRIZE_TIERS[i].minPoints) return PRIZE_TIERS[i]; }
+    return PRIZE_TIERS[PRIZE_TIERS.length-1];
+  }
+
+  /* ============ TIP OF THE DAY ============
+     Rotates once a day, same tip for every viewer (picked from the date,
+     no server needed). */
+  var TIPS = [
+    'Revisá los alrededores de tu casa varias veces al día: muchas mascotas vuelven solas en la primera semana.',
+    'Colgá carteles con una foto grande, bien clara, y tu teléfono en letra grande.',
+    'Avisá enseguida a las veterinarias y refugios cercanos — muchos llevan un registro de mascotas encontradas.',
+    'Dejá una prenda con tu olor cerca de la puerta o del lugar donde se perdió: ayuda a que vuelva por su cuenta.',
+    'Publicá en grupos de vecinos del barrio con la ubicación exacta y la hora en que se perdió.',
+    'Los gatos suelen esconderse cerca de casa: buscá bajo autos, en jardines y lugares silenciosos antes de alejarte.',
+    'Revisá cada aviso de avistamiento que te llegue, aunque la distancia te parezca poco probable.',
+    'Un collar con chapita y tu número facilita muchísimo que te avisen si la ven.',
+    'Salí a buscar en las horas de menos ruido, como el amanecer o el anochecer: los animales asustados se mueven más tranquilos.',
+    'Sumá a la ficha una foto reciente y de cuerpo entero: ayuda a que la comunidad la reconozca en la calle.',
+    'Golpeá la puerta de los vecinos más cercanos — muchas veces la vieron pasar sin saber que era la tuya.',
+    'Si ya la encontraste, marcá su estado como segura: así la comunidad deja de buscarla y podés ayudar a otros.',
+    'Llevá siempre algo de comida o un juguete conocido cuando salgas a buscar: puede acercarla si te ve.',
+    'Compartí la ficha por WhatsApp además de en la app: muchos avistamientos llegan por el boca a boca.'
+  ];
+  function tipOfDay(){
+    var d = new Date();
+    var start = new Date(d.getFullYear(), 0, 0);
+    var dayOfYear = Math.floor((d - start) / 86400000);
+    return TIPS[dayOfYear % TIPS.length];
+  }
+
+  /* ============ STATE ============ */
+  var state = {
+    db:null, user:null, assets:null,
+    myId:null,
+    currentUser:null,
+    authView:null /* null mientras se resuelve la sesión, luego 'login' o 'register' */,
+    authError:'',
+    tab:'home',
+    homeView:null,
+    myLocation:null,
+    petsLost:[],
+    petsLostLoaded:false,
+    myPets:[],
+    myPetsLoaded:false,
+    sightingsByPet:{},
+    contacts:[],
+    contactsLoaded:false,
+    contactFilter:'all',
+    founds:[],
+    foundsLoaded:false,
+    allSightings:[],
+    allSightingsLoaded:false,
+    businesses:[],
+    businessesLoaded:false,
+    adoptions:[],
+    adoptionsLoaded:false,
+    donationConfig:{mpAlias:'', paypalAlias:'', adminId:null},
+    donationConfigLoaded:false,
+    notifPermission:(('Notification' in window) ? Notification.permission : 'unsupported'),
+    sheet:null /* {type:'report'|'pet'|'contact'|'business'|'adoption'|'donate'|'info'|'confirm-delete', ...} */
+  };
+
+  var unsubLost=null, unsubMine=null, unsubSightings=null, unsubContacts=null, unsubFounds=null, unsubAllSightings=null, unsubBusinesses=null, unsubAdoptions=null, unsubSettings=null, sightingsInitialLoad=true, lastSightingKey='';
+
+  var profileCache = {}, profileFetching = {};
+  function ensureProfiles(ids){
+    if(!state.user) return;
+    var missing = [];
+    ids.forEach(function(id){ if(id && !profileCache[id] && !profileFetching[id] && missing.indexOf(id)===-1) missing.push(id); });
+    if(missing.length===0) return;
+    missing.forEach(function(id){ profileFetching[id] = true; });
+    state.user.profiles(missing).then(function(ps){
+      missing.forEach(function(id){ delete profileFetching[id]; profileCache[id] = ps[id] || {name:''}; });
+      render();
+    })['catch'](function(){ missing.forEach(function(id){ delete profileFetching[id]; }); });
+  }
+  function profileName(id){
+    if(!id) return 'Alguien de la comunidad';
+    var p = profileCache[id];
+    return (p && p.name) ? p.name : 'Alguien de la comunidad';
+  }
+
+  /* ============ DATA LAYER ============ */
+  function initData(){
+    return Promise.resolve().then(function(){
+      var chain = Promise.resolve();
+      if(state.db){
+        unsubLost = state.db.collection('pets').where('status','==','perdida').limit(50).onSnapshot(function(snap){
+          state.petsLost = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('updatedAt'));
+          state.petsLostLoaded = true;
+          render();
+        }, function(err){ console.warn('lost pets error', err); state.petsLostLoaded = true; render(); });
+        setTimeout(function(){ if(!state.petsLostLoaded){ state.petsLostLoaded = true; render(); } }, 8000);
+
+        unsubFounds = state.db.collection('founds').limit(100).onSnapshot(function(snap){
+          state.founds = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('foundAt'));
+          state.foundsLoaded = true;
+          render();
+        }, function(err){ console.warn('founds error', err); state.foundsLoaded = true; render(); });
+        setTimeout(function(){ if(!state.foundsLoaded){ state.foundsLoaded = true; render(); } }, 8000);
+
+        unsubAllSightings = state.db.collection('sightings').limit(500).onSnapshot(function(snap){
+          state.allSightings = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; });
+          state.allSightingsLoaded = true;
+          render();
+        }, function(err){ console.warn('all sightings error', err); state.allSightingsLoaded = true; render(); });
+        setTimeout(function(){ if(!state.allSightingsLoaded){ state.allSightingsLoaded = true; render(); } }, 8000);
+
+        unsubBusinesses = state.db.collection('businesses').limit(200).onSnapshot(function(snap){
+          state.businesses = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('updatedAt'));
+          state.businessesLoaded = true;
+          render();
+        }, function(err){ console.warn('businesses error', err); state.businessesLoaded = true; render(); });
+        setTimeout(function(){ if(!state.businessesLoaded){ state.businessesLoaded = true; render(); } }, 8000);
+
+        unsubAdoptions = state.db.collection('adoptions').limit(200).onSnapshot(function(snap){
+          state.adoptions = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('updatedAt'));
+          state.adoptionsLoaded = true;
+          render();
+        }, function(err){ console.warn('adoptions error', err); state.adoptionsLoaded = true; render(); });
+        setTimeout(function(){ if(!state.adoptionsLoaded){ state.adoptionsLoaded = true; render(); } }, 8000);
+
+        unsubSettings = state.db.collection('settings').limit(20).onSnapshot(function(snap){
+          var donationDoc = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).filter(function(d){ return d.id==='donation'; })[0];
+          state.donationConfig = {mpAlias: (donationDoc && donationDoc.mpAlias) || '', paypalAlias: (donationDoc && donationDoc.paypalAlias) || '', adminId: (donationDoc && donationDoc.adminId) || null};
+          state.donationConfigLoaded = true;
+          render();
+        }, function(err){ console.warn('settings error', err); state.donationConfigLoaded = true; render(); });
+        setTimeout(function(){ if(!state.donationConfigLoaded){ state.donationConfigLoaded = true; render(); } }, 8000);
+      } else {
+        state.petsLostLoaded = true; state.foundsLoaded = true; state.allSightingsLoaded = true; state.businessesLoaded = true; state.adoptionsLoaded = true; state.donationConfigLoaded = true;
+      }
+      if(state.user){
+        chain = state.user.id()['catch'](function(){ return null; }).then(function(id){
+          state.myId = id;
+          if(state.db && id){
+            unsubMine = state.db.collection('pets').where('ownerId','==',id).limit(100).onSnapshot(function(snap){
+              state.myPets = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('createdAt'));
+              state.myPetsLoaded = true;
+              resubscribeSightings();
+              render();
+            }, function(err){ console.warn('my pets error', err); state.myPetsLoaded = true; render(); });
+            setTimeout(function(){ if(!state.myPetsLoaded){ state.myPetsLoaded = true; render(); } }, 8000);
+            unsubContacts = state.db.collection('contacts').where('ownerId','==',id).limit(200).onSnapshot(function(snap){
+              state.contacts = snap.docs.map(function(d){ var b=d.data(); b.id=d.id; return b; }).sort(byFieldDesc('createdAt'));
+              state.contactsLoaded = true;
+              render();
+            }, function(err){ console.warn('contacts error', err); state.contactsLoaded = true; render(); });
+            setTimeout(function(){ if(!state.contactsLoaded){ state.contactsLoaded = true; render(); } }, 8000);
+          } else { state.myPetsLoaded = true; state.contactsLoaded = true; }
+        })['catch'](function(err){ console.warn('user id error', err); state.myPetsLoaded = true; state.contactsLoaded = true; });
+      } else { state.myPetsLoaded = true; state.contactsLoaded = true; }
+      return chain;
+    })['catch'](function(err){
+      console.error('Huellas init error:', err);
+      state.petsLostLoaded = true; state.myPetsLoaded = true; state.contactsLoaded = true;
+    }).then(render);
+  }
+
+  function resubscribeSightings(){
+    var lostIds = state.myPets.filter(function(p){ return p.status==='perdida'; }).map(function(p){ return p.id; }).slice(0,30);
+    var key = lostIds.slice().sort().join(',');
+    if(key === lastSightingKey) return;
+    lastSightingKey = key;
+    if(unsubSightings){ unsubSightings(); unsubSightings=null; }
+    state.sightingsByPet = {};
+    if(!state.db || lostIds.length===0){ render(); return; }
+    sightingsInitialLoad = true;
+    unsubSightings = state.db.collection('sightings').where('petId','in',lostIds).limit(150).onSnapshot(function(snap){
+      var wasInitial = sightingsInitialLoad;
+      if(!wasInitial){
+        snap.docChanges().forEach(function(ch){
+          if(ch.type==='added'){
+            var s = ch.doc.data(); s.id = ch.doc.id;
+            var pet = state.myPets.filter(function(p){ return p.id===s.petId; })[0];
+            notifyNewSighting(pet, s);
+          }
+        });
+      }
+      sightingsInitialLoad = false;
+      var map = {};
+      snap.docs.forEach(function(d){
+        var s = d.data(); s.id = d.id;
+        (map[s.petId] = map[s.petId] || []).push(s);
+      });
+      Object.keys(map).forEach(function(k){ map[k].sort(byFieldDesc('createdAt')); });
+      state.sightingsByPet = map;
+      render();
+    }, function(err){ console.warn('sightings error', err); });
+  }
+
+  function notifyNewSighting(pet, sighting){
+    var petName = pet ? pet.name : 'tu mascota';
+    showToast('¡' + petName + '! Alguien reportó haberla visto.');
+    if(state.notifPermission === 'granted' && ('Notification' in window)){
+      try{
+        new Notification('¡Avistamiento de ' + petName + '!', {
+          body: sighting.note ? sighting.note : 'Alguien la vio recién. Abrí Huellas para ver el mapa.'
+        });
+      }catch(e){}
+    }
+  }
+
+  /* ============ WRITES ============ */
+  /* Optimistic local-state helpers: update what THIS viewer sees immediately,
+     instead of waiting on the realtime subscription round-trip. The
+     subscription still applies as the source of truth when it delivers. */
+  function upsertMyPet(pet){
+    var i = state.myPets.findIndex(function(p){ return p.id===pet.id; });
+    if(i>=0) state.myPets[i] = pet; else state.myPets.unshift(pet);
+    state.myPets.sort(byFieldDesc('createdAt'));
+    state.myPetsLoaded = true;
+  }
+  function removeMyPet(id){
+    state.myPets = state.myPets.filter(function(p){ return p.id!==id; });
+    delete state.sightingsByPet[id];
+  }
+  function upsertLostPet(pet){
+    if(pet.status !== 'perdida'){ state.petsLost = state.petsLost.filter(function(p){ return p.id!==pet.id; }); return; }
+    var i = state.petsLost.findIndex(function(p){ return p.id===pet.id; });
+    if(i>=0) state.petsLost[i] = pet; else state.petsLost.unshift(pet);
+    state.petsLost.sort(byFieldDesc('updatedAt'));
+    state.petsLostLoaded = true;
+  }
+
+  function resolvePhotos(existingPhotos, newFiles){
+    var kept = (existingPhotos||[]).slice(0, MAX_PET_PHOTOS).map(function(p){ return {photoAssetId:p.assetId||null, photoUrl:p.url}; });
+    var files = (newFiles||[]).slice(0, Math.max(0, MAX_PET_PHOTOS - kept.length));
+    var uploadPromises = (state.assets ? files : []).map(function(file){
+      return state.assets.upload(file).then(function(res){
+        return {photoAssetId: res.id, photoUrl: res.url};
+      })['catch'](function(){ return null; });
+    });
+    return Promise.all(uploadPromises).then(function(uploaded){
+      var failedCount = uploaded.filter(function(u){ return !u; }).length;
+      if(failedCount>0) showToast(failedCount===1 ? 'No se pudo subir una de las fotos.' : 'No se pudieron subir ' + failedCount + ' de las fotos.');
+      var allPhotos = kept.concat(uploaded.filter(Boolean)).slice(0, MAX_PET_PHOTOS);
+      return {
+        photoAssetIds: allPhotos.map(function(p){ return p.photoAssetId; }),
+        photoUrls: allPhotos.map(function(p){ return p.photoUrl; }),
+        photoAssetId: allPhotos.length ? allPhotos[0].photoAssetId : null,
+        photoUrl: allPhotos.length ? allPhotos[0].photoUrl : null
+      };
+    });
+  }
+
+  function savePet(form, existing){
+    if(!state.db){ showToast('Modo de ejemplo: esta acción se guardaría en la app real.'); closeSheet(); return Promise.resolve(); }
+    var id = existing ? existing.id : uid('p');
+    var ref = state.db.collection('pets').doc(id);
+    return resolvePhotos(form.existingPhotos, form.newPhotoFiles).then(function(photos){
+      var body = Object.assign({
+        ownerId: state.myId,
+        name: form.name, species: form.species, breed: form.breed||'', color: form.color||'', size: form.size||'',
+        description: form.description||'',
+        contactName: form.contactName||'', contactPhone: form.contactPhone||'', contactNote: form.contactNote||'',
+        status: existing ? existing.status : 'segura',
+        lastSeen: existing ? (existing.lastSeen||null) : null,
+        createdAt: existing ? existing.createdAt : nowIso(),
+        updatedAt: nowIso()
+      }, photos);
+      var writeOp = existing ? ref.update(body) : ref.set(body);
+      return writeOp.then(function(){ return body; });
+    }).then(function(body){
+      var fullPet = Object.assign({}, body, {id:id});
+      upsertMyPet(fullPet);
+      upsertLostPet(fullPet);
+      render();
+      showToast(existing ? 'Ficha actualizada.' : 'Ficha creada. Ya la ves en "Mis mascotas".');
+      closeSheet();
+    })['catch'](function(err){
+      console.warn('Huellas: no se pudo guardar la ficha', err);
+      showToast('No se pudo guardar. Probá de nuevo.');
+    });
+  }
+
+  function setPetStatus(pet, status, loc){
+    if(!state.db) { showToast('Modo de ejemplo: esta acción se guardaría en la app real.'); return; }
+    var wasLost = pet.status === 'perdida';
+    var body = {status:status, updatedAt: nowIso()};
+    if(status === 'perdida'){ body.lastSeen = {lat:loc.lat, lng:loc.lng, timestamp: nowIso()}; }
+    state.db.collection('pets').doc(pet.id).update(body).then(function(){
+      var updated = Object.assign({}, pet, body);
+      upsertMyPet(updated);
+      upsertLostPet(updated);
+      resubscribeSightings();
+      if(status === 'segura' && wasLost){
+        logFound(updated);
+      }
+      render();
+      showToast(status==='perdida' ? (pet.name + ' fue marcada como perdida y ya es visible para la comunidad.') : ('¡Qué alivio! ' + pet.name + ' está segura.'));
+    })['catch'](function(err){ console.warn('Huellas: no se pudo actualizar el estado', err); showToast('No se pudo actualizar el estado.'); });
+  }
+
+  function logFound(pet){
+    var fid = uid('f');
+    var sightingsCount = (state.sightingsByPet[pet.id] || []).length;
+    var doc = {
+      petId: pet.id, name: pet.name, species: pet.species, breed: pet.breed||'',
+      ownerId: state.myId,
+      lostAt: pet.lastSeen ? pet.lastSeen.timestamp : null,
+      foundAt: nowIso(),
+      sightingsCount: sightingsCount,
+      createdAt: nowIso()
+    };
+    state.db.collection('founds').doc(fid).set(doc).then(function(){
+      state.founds.unshift(Object.assign({}, doc, {id:fid}));
+      state.founds.sort(byFieldDesc('foundAt'));
+      state.foundsLoaded = true;
+      render();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo registrar el hallazgo', err); });
+  }
+
+  function deletePet(pet){
+    if(!state.db){ showToast('Modo de ejemplo.'); closeSheet(); return; }
+    state.db.collection('pets').doc(pet.id).delete().then(function(){
+      removeMyPet(pet.id);
+      state.petsLost = state.petsLost.filter(function(p){ return p.id!==pet.id; });
+      resubscribeSightings();
+      render();
+      showToast('Ficha de ' + pet.name + ' eliminada.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo eliminar', err); showToast('No se pudo eliminar.'); });
+  }
+
+  function submitSighting(pet, loc, note, contactName, contactPhone){
+    if(!state.db){
+      showToast('Modo de ejemplo: en la app real, esto le avisaría ahora mismo al dueño de ' + pet.name + '.');
+      closeSheet();
+      return;
+    }
+    var id = uid('s');
+    var sighting = {
+      petId: pet.id, lat: loc.lat, lng: loc.lng, timestamp: nowIso(),
+      note: note||'', reporterId: state.myId||null, reporterName: contactName||'', reporterPhone: contactPhone||'',
+      createdAt: nowIso()
+    };
+    state.db.collection('sightings').doc(id).set(sighting).then(function(){
+      var withId = Object.assign({}, sighting, {id:id});
+      var list = state.sightingsByPet[pet.id] || (state.sightingsByPet[pet.id] = []);
+      list.unshift(withId);
+      render();
+      showToast('¡Gracias! Avisamos a quien cuida a ' + pet.name + '.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo enviar el aviso', err); showToast('No se pudo enviar el aviso. Probá de nuevo.'); });
+  }
+
+  function upsertContact(contact){
+    var i = state.contacts.findIndex(function(c){ return c.id===contact.id; });
+    if(i>=0) state.contacts[i] = contact; else state.contacts.unshift(contact);
+    state.contacts.sort(byFieldDesc('createdAt'));
+    state.contactsLoaded = true;
+  }
+  function removeContact(id){
+    state.contacts = state.contacts.filter(function(c){ return c.id!==id; });
+  }
+
+  function saveContact(form, existing){
+    if(!state.db){ showToast('Modo de ejemplo: esta acción se guardaría en la app real.'); closeSheet(); return; }
+    var id = existing ? existing.id : uid('c');
+    var body = {
+      ownerId: state.myId,
+      category: form.category, name: form.name, phone: form.phone||'', address: form.address||'', notes: form.notes||'',
+      createdAt: existing ? existing.createdAt : nowIso(),
+      updatedAt: nowIso()
+    };
+    var ref = state.db.collection('contacts').doc(id);
+    var writeOp = existing ? ref.update(body) : ref.set(body);
+    writeOp.then(function(){
+      upsertContact(Object.assign({}, body, {id:id}));
+      render();
+      showToast(existing ? 'Contacto actualizado.' : 'Contacto agregado al directorio.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo guardar el contacto', err); showToast('No se pudo guardar. Probá de nuevo.'); });
+  }
+
+  function deleteContact(contact){
+    if(!state.db){ showToast('Modo de ejemplo.'); closeSheet(); return; }
+    state.db.collection('contacts').doc(contact.id).delete().then(function(){
+      removeContact(contact.id);
+      render();
+      showToast('Contacto eliminado.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo eliminar el contacto', err); showToast('No se pudo eliminar.'); });
+  }
+
+  function upsertBusiness(business){
+    var i = state.businesses.findIndex(function(b){ return b.id===business.id; });
+    if(i>=0) state.businesses[i] = business; else state.businesses.unshift(business);
+    state.businesses.sort(byFieldDesc('updatedAt'));
+    state.businessesLoaded = true;
+  }
+  function removeBusiness(id){
+    state.businesses = state.businesses.filter(function(b){ return b.id!==id; });
+  }
+  function findBusiness(id){
+    return state.businesses.filter(function(b){return b.id===id;})[0]
+      || EXAMPLE_BUSINESSES.filter(function(b){return b.id===id;})[0]
+      || null;
+  }
+
+  function saveBusiness(form, existing){
+    if(!state.db){ showToast('Modo de ejemplo: esta acción se guardaría en la app real.'); closeSheet(); return Promise.resolve(); }
+    var id = existing ? existing.id : uid('biz');
+    var uploadStep = Promise.resolve({photoAssetId: existing ? existing.photoAssetId||null : null, photoUrl: existing ? existing.photoUrl||null : null});
+    if(form.photoFile && state.assets){
+      uploadStep = state.assets.upload(form.photoFile).then(function(res){
+        return {photoAssetId: res.id, photoUrl: res.url};
+      })['catch'](function(){ showToast('No se pudo subir la foto; se guardó el establecimiento sin foto.'); return {photoAssetId:null, photoUrl:null}; });
+    }
+    return uploadStep.then(function(photo){
+      var body = {
+        ownerId: state.myId,
+        category: form.category, name: form.name, responsibleName: form.responsibleName,
+        email: form.email, phone: form.phone||'', description: form.description||'',
+        photoAssetId: photo.photoAssetId, photoUrl: photo.photoUrl,
+        createdAt: existing ? existing.createdAt : nowIso(),
+        updatedAt: nowIso()
+      };
+      var ref = state.db.collection('businesses').doc(id);
+      var writeOp = existing ? ref.update(body) : ref.set(body);
+      return writeOp.then(function(){
+        upsertBusiness(Object.assign({}, body, {id:id}));
+        render();
+        showToast(existing ? 'Establecimiento actualizado.' : 'Establecimiento registrado en el directorio.');
+        closeSheet();
+      });
+    })['catch'](function(err){ console.warn('Huellas: no se pudo guardar el establecimiento', err); showToast('No se pudo guardar. Probá de nuevo.'); });
+  }
+
+  function deleteBusiness(business){
+    if(!state.db){ showToast('Modo de ejemplo.'); closeSheet(); return; }
+    state.db.collection('businesses').doc(business.id).delete().then(function(){
+      removeBusiness(business.id);
+      render();
+      showToast('Establecimiento eliminado.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo eliminar el establecimiento', err); showToast('No se pudo eliminar.'); });
+  }
+
+  function upsertAdoption(adoption){
+    var i = state.adoptions.findIndex(function(a){ return a.id===adoption.id; });
+    if(i>=0) state.adoptions[i] = adoption; else state.adoptions.unshift(adoption);
+    state.adoptions.sort(byFieldDesc('updatedAt'));
+    state.adoptionsLoaded = true;
+  }
+  function removeAdoption(id){
+    state.adoptions = state.adoptions.filter(function(a){ return a.id!==id; });
+  }
+  function findAdoption(id){
+    return state.adoptions.filter(function(a){return a.id===id;})[0]
+      || EXAMPLE_ADOPTIONS.filter(function(a){return a.id===id;})[0]
+      || null;
+  }
+
+  function saveAdoption(form, existing){
+    if(!state.db){ showToast('Modo de ejemplo: esta acción se guardaría en la app real.'); closeSheet(); return Promise.resolve(); }
+    var id = existing ? existing.id : uid('ad');
+    var ref = state.db.collection('adoptions').doc(id);
+    return resolvePhotos(form.existingPhotos, form.newPhotoFiles).then(function(photos){
+      var body = Object.assign({
+        ownerId: state.myId,
+        name: form.name||'', species: form.species, breed: form.breed||'', age: form.age||'',
+        description: form.description||'',
+        neutered: !!form.neutered, vaccinated: !!form.vaccinated, dewormed: !!form.dewormed,
+        contactName: form.contactName||'', contactPhone: form.contactPhone||'',
+        createdAt: existing ? existing.createdAt : nowIso(),
+        updatedAt: nowIso()
+      }, photos);
+      var writeOp = existing ? ref.update(body) : ref.set(body);
+      return writeOp.then(function(){ return body; });
+    }).then(function(body){
+      upsertAdoption(Object.assign({}, body, {id:id}));
+      render();
+      showToast(existing ? 'Publicación actualizada.' : 'Publicada en adopción.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo guardar la publicación', err); showToast('No se pudo guardar. Probá de nuevo.'); });
+  }
+
+  function deleteAdoption(adoption){
+    if(!state.db){ showToast('Modo de ejemplo.'); closeSheet(); return; }
+    state.db.collection('adoptions').doc(adoption.id).delete().then(function(){
+      removeAdoption(adoption.id);
+      render();
+      showToast('Publicación eliminada.');
+      closeSheet();
+    })['catch'](function(err){ console.warn('Huellas: no se pudo eliminar la publicación', err); showToast('No se pudo eliminar.'); });
+  }
+
+  function defaultDonationMethod(){
+    var cfg = state.db ? state.donationConfig : EXAMPLE_DONATION_CONFIG;
+    if(cfg && cfg.mpAlias) return 'mp';
+    if(cfg && cfg.paypalAlias) return 'paypal';
+    return 'mp';
+  }
+
+  /* Los alias son fijos: los carga una sola persona (quien los guarda primero
+     queda como administrador/a) y de ahí en más solo esa cuenta puede editarlos. */
+  function canEditDonation(cfg){
+    if(!state.db) return true; /* modo de ejemplo: no se guarda nada realmente */
+    if(!cfg || !cfg.adminId) return true; /* nadie los cargó todavía: la próxima persona que guarde queda como admin */
+    return !!(state.myId && cfg.adminId === state.myId);
+  }
+
+  function saveDonationConfig(form){
+    if(!state.db){
+      showToast('Modo de ejemplo: esta acción se guardaría en la app real.');
+      if(state.sheet) state.sheet.settingsMode = false;
+      render();
+      return;
+    }
+    if(!canEditDonation(state.donationConfig)){
+      showToast('Solo la persona administradora de Huellas puede editar estos alias.');
+      return;
+    }
+    var body = {
+      mpAlias: form.mpAlias||'',
+      paypalAlias: form.paypalAlias||'',
+      adminId: state.donationConfig.adminId || state.myId || null,
+      updatedAt: nowIso()
+    };
+    state.db.collection('settings').doc('donation').set(body).then(function(){
+      var wasClaim = !state.donationConfig.adminId && body.adminId;
+      state.donationConfig = body;
+      state.donationConfigLoaded = true;
+      if(state.sheet && state.sheet.type==='donate'){
+        state.sheet.settingsMode = false;
+        if(state.sheet.method==='mp' && !body.mpAlias && body.paypalAlias) state.sheet.method = 'paypal';
+        if(state.sheet.method==='paypal' && !body.paypalAlias && body.mpAlias) state.sheet.method = 'mp';
+      }
+      render();
+      showToast(wasClaim ? 'Alias guardados. Quedaste como administrador/a: de ahora en más, solo vos podés editarlos.' : 'Alias actualizados.');
+    })['catch'](function(err){ console.warn('Huellas: no se pudo guardar el alias', err); showToast('No se pudo guardar. Probá de nuevo.'); });
+  }
+
+  function donateMethodBlock(s, cfg){
+    var isMp = s.method === 'mp';
+    var alias = isMp ? (cfg && cfg.mpAlias) : (cfg && cfg.paypalAlias);
+    var label = isMp ? 'Mercado Pago' : 'PayPal';
+    if(!alias){
+      return '<div class="empty" style="margin-top:12px;">' + icon('info') + '<div>Todavía no se cargó un alias de ' + label + '. Tocá "Cargar los alias de colaboración" para sumarlo.</div></div>';
+    }
+    return (
+      '<div class="loc-box" style="margin-top:12px;">' +
+        '<div class="loc-status">' + icon('check') + 'Alias de ' + label + '</div>' +
+        '<div class="loc-coords mono" style="font-size:15px;color:var(--ink);margin-top:6px;">' + esc(alias) + '</div>' +
+        '<button type="button" class="btn btn-accent btn-block" style="margin-top:10px;" data-action="copy-donation-alias" data-alias="'+esc(alias)+'">'+icon('check')+'Copiar alias</button>' +
+        '<div class="hint" style="margin-top:8px;">' + (isMp ? 'Abrí tu app de Mercado Pago, elegí "Transferir" y pegá este alias.' : 'Enviá tu colaboración a este usuario o email desde la app de PayPal.') + '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ============ RENDER: HOME MENU ============ */
+  function renderHomeMenu(){
+    var lostSource = state.petsLostLoaded ? state.petsLost : (state.petsLostLoaded===false ? null : EXAMPLE_PETS);
+    var lostCount = state.petsLostLoaded ? state.petsLost.length : (state.db ? null : EXAMPLE_PETS.length);
+    var adoptSource = state.db ? state.adoptions : EXAMPLE_ADOPTIONS;
+    var adoptCount = (!state.db || state.adoptionsLoaded) ? adoptSource.length : null;
+    var bizSource = state.db ? state.businesses : EXAMPLE_BUSINESSES;
+    var bizCount = (!state.db || state.businessesLoaded) ? bizSource.length : null;
+
+    var html = '';
+    html += '<h2 class="screen-title">¿Qué necesitás hacer?</h2>';
+    html += '<div class="screen-sub">Elegí una opción para empezar.</div>';
+
+    if(!state.db){
+      html += '<div class="demo-banner">' + icon('info') + '<span>Estás viendo una <strong>vista de ejemplo</strong>. Abrí esta página desde tu cuenta de Claude para usar todo con datos reales.</span></div>';
+    }
+
+    html += '<button type="button" class="menu-card menu-card-hero" data-action="go-lost-list">' +
+      '<div class="menu-icon">' + icon('pin') + '</div>' +
+      '<div><div class="menu-title">Mascotas perdidas cerca tuyo</div>' +
+      '<div class="menu-sub">' + (lostCount==null ? 'Ver la lista' : (lostCount + ' reportada' + (lostCount!==1?'s':'') + ' ahora')) + '</div></div>' +
+    '</button>';
+
+    html += '<div class="menu-grid">';
+    html += menuCard('add-pet-shortcut', 'plus', 'Cargar tu mascota', 'Ficha nueva o perdida');
+    html += menuCard('go-adoptions', 'adopt', 'Adopciones', adoptCount==null?'Ver publicadas':(adoptCount + ' en adopción'));
+    html += menuCard('go-directory', 'store', 'Directorio y establecimientos', bizCount==null?'Veterinarias, comercios…':(bizCount + ' registrados'));
+    html += menuCard('go-community', 'trophy', 'Comunidad', 'Ranking y consejos');
+    html += menuCard('go-mine', 'house', 'Mis mascotas', 'Tus fichas guardadas');
+    html += menuCard('open-donate', 'heart', 'Colaborar con Huellas', 'Sumá tu aporte');
+    html += '</div>';
+
+    return html;
+  }
+  function menuCard(action, iconName, title, sub){
+    return '<button type="button" class="menu-card" data-action="'+action+'">' +
+      '<div class="menu-icon">' + icon(iconName) + '</div>' +
+      '<div class="menu-title">'+esc(title)+'</div>' +
+      '<div class="menu-sub">'+esc(sub)+'</div>' +
+    '</button>';
+  }
+
+  /* ============ RENDER: HOME ============ */
+  function renderHome(){
+    var showExamples = state.petsLostLoaded && state.petsLost.length===0;
+    var list = showExamples ? EXAMPLE_PETS : state.petsLost;
+    var totalCount = list.length;
+    var nearbyMode = false;
+
+    if(state.myLocation){
+      nearbyMode = true;
+      list = list
+        .map(function(pet){ return {pet:pet, d: pet.lastSeen ? distanceKm(state.myLocation, pet.lastSeen) : null}; })
+        .filter(function(row){ return row.d!=null && row.d <= SEARCH_RADIUS_KM; })
+        .sort(function(a,b){ return a.d - b.d; })
+        .map(function(row){ return row.pet; });
+    }
+
+    var html = '';
+    html += '<button type="button" class="back-link" data-action="go-home-menu">' + icon('chevron') + 'Inicio</button>';
+    html += '<h2 class="screen-title">' + (nearbyMode ? 'Mascotas perdidas a menos de ' + SEARCH_RADIUS_KM + ' km' : 'Mascotas perdidas cerca tuyo') + '</h2>';
+    html += '<div class="screen-sub" id="loc-row">' + (state.myLocation ? '<span style="display:inline-flex;align-items:center;gap:5px;">' + icon('pin') + 'Ubicación activa &middot; ordenado por cercanía</span>' : '<button class="link-btn" data-action="use-location">Activar mi ubicación para ver solo las de cerca</button>') + '</div>';
+
+    if(!state.db){
+      html += '<div class="demo-banner">' + icon('info') + '<span>Estás viendo una <strong>vista de ejemplo</strong>. Abrí esta página desde tu cuenta de Claude para cargar mascotas reales y recibir avisos.</span></div>';
+    }
+
+    if(nearbyMode && list.length===0 && totalCount>0){
+      html += '<div class="empty">' + icon('paw') + '<div>No hay mascotas perdidas reportadas a menos de ' + SEARCH_RADIUS_KM + ' km de donde estás. Hay ' + totalCount + ' reportada' + (totalCount>1?'s':'') + ' más lejos.</div></div>';
+    } else if(list.length===0){
+      html += '<div class="empty">' + icon('paw') + '<div>Por suerte, no hay mascotas perdidas reportadas por ahora.</div></div>';
+    } else {
+      html += '<div class="card-list">' + list.map(renderLostCard).join('') + '</div>';
+    }
+    return html;
+  }
+
+  function renderLostCard(pet){
+    var dist = state.myLocation && pet.lastSeen ? formatDistance(distanceKm(state.myLocation, pet.lastSeen)) : null;
+    var photo = pet.photoUrl ? '<img src="'+esc(pet.photoUrl)+'" alt="">' : initials(pet.name);
+    return (
+      '<div class="pet-card' + (pet.example ? ' is-example' : '') + '" data-pet-id="'+esc(pet.id)+'">' +
+        '<div class="pet-top">' +
+          '<div class="avatar">' + photo + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(pet.name)+'</span><span class="badge badge-lost">Perdida</span></div>' +
+            '<div class="pet-breed">'+esc(pet.species)+(pet.breed ? ' &middot; '+esc(pet.breed) : '')+(pet.color ? ' &middot; '+esc(pet.color) : '')+'</div>' +
+            '<div class="pet-meta">' +
+              (pet.lastSeen ? '<span>'+icon('clock')+timeAgo(pet.lastSeen.timestamp)+'</span>' : '') +
+              (dist ? '<span>'+icon('ruler')+'a '+dist+'</span>' : '') +
+              (pet.lastSeen ? '<span><a href="'+mapsLink(pet.lastSeen.lat,pet.lastSeen.lng)+'" target="_blank" rel="noopener">'+icon('pin')+'Ver mapa</a></span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        (pet.description ? '<p class="pet-desc">'+esc(pet.description)+'</p>' : '') +
+        extraPhotosStrip(pet) +
+        '<div class="card-actions">' +
+          '<button class="btn btn-primary btn-block" data-action="open-report" data-pet-id="'+esc(pet.id)+'">'+icon('eye')+'La vi</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ============ RENDER: MINE ============ */
+  function renderMine(){
+    var html = '';
+    if(!state.user || !state.db){
+      html += '<h2 class="screen-title">Mis mascotas</h2>';
+      html += '<div class="demo-banner">' + icon('info') + '<span>Para cargar fichas y recibir avisos reales, abrí esta página desde tu cuenta de Claude (esta vista es solo de ejemplo).</span></div>';
+      html += '<div class="card-list">' + EXAMPLE_PETS.map(renderMineCard).join('') + '</div>';
+      return html;
+    }
+    if(!state.myId){
+      html += '<h2 class="screen-title">Mis mascotas</h2>';
+      html += '<div class="empty">' + icon('paw') + '<div>No pudimos identificarte en esta vista, así que no podés gestionar fichas acá.</div></div>';
+      return html;
+    }
+
+    html += '<div class="mine-header">' +
+      '<div><h2 class="screen-title">Mis mascotas</h2><div class="screen-sub" style="margin-bottom:0">Cargá su ficha para tenerla lista si algún día se pierde.</div></div>' +
+      '<button class="icon-btn' + (state.notifPermission==='granted' ? ' on' : '') + '" data-action="toggle-notif" title="Avisos en este navegador">' + (state.notifPermission==='granted' ? icon('bell') : icon('bellOff')) + '</button>' +
+    '</div>';
+
+    if(!state.myPetsLoaded){
+      html += '<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Cargando tus mascotas…</div>';
+      return html;
+    }
+
+    if(state.myPets.length===0){
+      html += '<div class="empty">' + icon('paw') + '<div>Todavía no cargaste ninguna ficha. Tocá el botón + para agregar tu primera mascota.</div></div>';
+    } else {
+      html += '<div class="card-list">' + state.myPets.map(renderMineCard).join('') + '</div>';
+    }
+    return html;
+  }
+
+  function renderMineCard(pet){
+    var isLost = pet.status === 'perdida';
+    var photo = pet.photoUrl ? '<img src="'+esc(pet.photoUrl)+'" alt="">' : initials(pet.name);
+    var sightings = state.sightingsByPet[pet.id] || [];
+    var sightingsHtml = '';
+    if(isLost){
+      sightingsHtml += '<div class="sightings">';
+      sightingsHtml += '<div class="sightings-title">' + icon('bell') + (sightings.length ? sightings.length + ' aviso' + (sightings.length>1?'s':'') + ' recibido' + (sightings.length>1?'s':'') : 'Avisos de la comunidad') + '</div>';
+      if(sightings.length===0){
+        sightingsHtml += '<p style="color:var(--ink-faint); font-size:12.5px;">Todavía nadie reportó haberla visto. Apenas alguien la vea, aparece acá al instante.</p>';
+      } else {
+        sightingsHtml += sightings.slice(0,6).map(function(s){
+          return '<div class="sighting-item"><div class="row1"><span>' + timeAgo(s.createdAt) + '</span><a href="'+mapsLink(s.lat,s.lng)+'" target="_blank" rel="noopener">Ver mapa</a></div>' +
+            (s.note ? '<div class="note">"'+esc(s.note)+'"</div>' : '') +
+            (s.reporterName || s.reporterPhone ? '<div class="note" style="color:var(--ink-faint)">Contacto: '+esc(s.reporterName)+(s.reporterPhone?' · '+esc(s.reporterPhone):'')+'</div>' : '') +
+          '</div>';
+        }).join('');
+      }
+      sightingsHtml += '</div>';
+    }
+    return (
+      '<div class="pet-card' + (pet.example ? ' is-example' : '') + '" data-pet-id="'+esc(pet.id)+'">' +
+        '<div class="pet-top">' +
+          '<div class="avatar">' + photo + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(pet.name)+'</span><span class="badge '+(isLost?'badge-lost':'badge-safe')+'">'+(isLost?'Perdida':'Segura')+'</span></div>' +
+            '<div class="pet-breed">'+esc(pet.species)+(pet.breed ? ' &middot; '+esc(pet.breed) : '')+'</div>' +
+          '</div>' +
+          '<div class="status-switch">' +
+            '<button class="'+(!isLost?'on-safe':'')+'" data-action="mark-safe" data-pet-id="'+esc(pet.id)+'">En casa</button>' +
+            '<button class="'+(isLost?'on-lost':'')+'" data-action="mark-lost" data-pet-id="'+esc(pet.id)+'">Perdida</button>' +
+          '</div>' +
+        '</div>' +
+        (pet.description ? '<p class="pet-desc">'+esc(pet.description)+'</p>' : '') +
+        extraPhotosStrip(pet) +
+        '<div class="owner-row">' +
+          '<button class="btn btn-ghost btn-sm" data-action="edit-pet" data-pet-id="'+esc(pet.id)+'">'+icon('pencil')+'Editar</button>' +
+          '<button class="btn btn-ghost btn-sm" data-action="delete-pet" data-pet-id="'+esc(pet.id)+'">'+icon('trash')+'Eliminar</button>' +
+        '</div>' +
+        sightingsHtml +
+      '</div>'
+    );
+  }
+
+  /* ============ RENDER: DIRECTORY ============ */
+  function nearbyMapsUrl(meta, loc){
+    var q = encodeURIComponent(meta.searchQuery);
+    if(loc) return 'https://www.google.com/maps/search/' + q + '/@' + loc.lat + ',' + loc.lng + ',14z';
+    return 'https://www.google.com/maps/search/?api=1&query=' + q;
+  }
+  function nearbySearchBlock(meta){
+    var box = '<div class="loc-box" style="margin-bottom:14px;">';
+    if(state.myLocation){
+      box += '<a class="btn btn-accent btn-block" href="'+nearbyMapsUrl(meta, state.myLocation)+'" target="_blank" rel="noopener">' + icon('pin') + 'Buscar ' + esc(meta.label.toLowerCase()) + ' cerca tuyo en Google Maps</a>';
+      box += '<div class="hint" style="margin-top:8px;">Te abre resultados reales y actualizados de Google Maps, centrados en tu ubicación activa.</div>';
+    } else {
+      box += '<button type="button" class="btn btn-accent btn-block" data-action="use-location-for-search" data-cat="'+meta.key+'">' + icon('pin') + 'Activar ubicación y buscar ' + esc(meta.label.toLowerCase()) + ' cerca tuyo</button>';
+      box += '<div class="hint" style="margin-top:8px;">Vamos a pedirte tu ubicación para centrar la búsqueda en Google Maps donde estás ahora. Si preferís no compartirla, <a href="'+nearbyMapsUrl(meta, null)+'" target="_blank" rel="noopener">buscá igual sin ubicación</a>.</div>';
+    }
+    box += '</div>';
+    return box;
+  }
+
+  function renderDirectory(){
+    var html = '';
+    html += '<h2 class="screen-title">Directorio</h2>';
+    html += '<div class="screen-sub">Los contactos que necesitás a mano para cuidar a tus mascotas.</div>';
+
+    if(!state.user || !state.db){
+      html += '<div class="demo-banner">' + icon('info') + '<span>Para guardar contactos reales, abrí esta página desde tu cuenta de Claude (esta vista es solo de ejemplo).</span></div>';
+    } else if(!state.myId){
+      html += '<div class="empty">' + icon('book') + '<div>No pudimos identificarte en esta vista, así que no podés gestionar el directorio acá.</div></div>';
+      return html;
+    }
+
+    html += '<div class="chip-row">';
+    html += '<button class="chip' + (state.contactFilter==='all'?' active':'') + '" data-action="filter-category" data-cat="all">Todos</button>';
+    html += CATEGORIES.map(function(c){
+      return '<button class="chip' + (state.contactFilter===c.key?' active':'') + '" data-action="filter-category" data-cat="'+c.key+'">' + icon(c.icon) + c.label + '</button>';
+    }).join('');
+    html += '</div>';
+
+    if(state.contactFilter !== 'all'){
+      var activeMeta = categoryMeta(state.contactFilter);
+      if(activeMeta.searchQuery){
+        html += nearbySearchBlock(activeMeta);
+      }
+    }
+
+    html += renderAdoptionsSection();
+    html += renderBusinessesSection();
+
+    html += '<h3 class="section-title" style="margin-top:22px;">' + icon('book') + 'Tus contactos guardados</h3>';
+
+    if(!state.user || !state.db){
+      var demo = state.contactFilter==='all' ? EXAMPLE_CONTACTS : EXAMPLE_CONTACTS.filter(function(c){ return c.category===state.contactFilter; });
+      html += demo.length ? '<div class="card-list">' + demo.map(renderContactCard).join('') + '</div>' : emptyDirectoryState();
+      return html;
+    }
+
+    if(!state.contactsLoaded){
+      html += '<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Cargando el directorio…</div>';
+      return html;
+    }
+
+    var list = state.contactFilter==='all' ? state.contacts : state.contacts.filter(function(c){ return c.category===state.contactFilter; });
+    html += list.length ? '<div class="card-list">' + list.map(renderContactCard).join('') + '</div>' : emptyDirectoryState();
+    return html;
+  }
+
+  function emptyDirectoryState(){
+    return '<div class="empty">' + icon('book') + '<div>Todavía no cargaste contactos ' + (state.contactFilter==='all' ? '' : 'en esta categoría ') + '. Tocá el botón + para agregar el primero.</div></div>';
+  }
+
+  function renderBusinessesSection(){
+    var inScope = state.contactFilter==='all' || BUSINESS_CATEGORIES.some(function(c){ return c.key===state.contactFilter; });
+    if(!inScope) return '';
+
+    var html = '<h3 class="section-title" style="margin-top:4px;">' + icon('store') + 'Establecimientos en la comunidad</h3>';
+    html += '<div class="screen-sub" style="margin-top:-6px;">Veterinarias, pet shops y otros negocios que se sumaron al directorio.</div>';
+
+    if(state.user && state.db && state.myId){
+      html += '<button type="button" class="btn btn-secondary btn-sm" data-action="add-business" style="margin-bottom:12px;">' + icon('plus') + 'Registrar mi establecimiento</button>';
+    } else if(!state.db){
+      html += '<div class="hint" style="margin-bottom:12px;">Para registrar tu establecimiento real, abrí esta página desde tu cuenta de Claude.</div>';
+    }
+
+    var source;
+    if(!state.db){
+      source = EXAMPLE_BUSINESSES;
+    } else if(!state.businessesLoaded){
+      html += '<div class="empty" style="margin-bottom:22px;"><div class="spinner" style="margin:0 auto 8px"></div>Cargando establecimientos…</div>';
+      return html;
+    } else {
+      source = state.businesses;
+    }
+
+    var list = state.contactFilter==='all' ? source : source.filter(function(b){ return b.category===state.contactFilter; });
+    html += list.length
+      ? '<div class="card-list" style="margin-bottom:22px;">' + list.map(renderBusinessCard).join('') + '</div>'
+      : '<div class="empty" style="margin-bottom:22px;">' + icon('store') + '<div>Todavía no hay establecimientos registrados ' + (state.contactFilter==='all' ? '' : 'en esta categoría ') + '. ¡Sumá el tuyo con el botón de arriba!</div></div>';
+    return html;
+  }
+
+  function renderBusinessCard(b){
+    var meta = categoryMeta(b.category);
+    var isMine = !b.example && state.myId && b.ownerId === state.myId;
+    var photo = b.photoUrl ? '<img src="'+esc(b.photoUrl)+'" alt="">' : icon(meta.icon);
+    return (
+      '<div class="pet-card' + (b.example ? ' is-example' : '') + '">' +
+        '<div class="pet-top">' +
+          '<div class="avatar">' + photo + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(b.name)+'</span><span class="badge" style="background:var(--accent-soft);color:var(--accent-ink);">'+esc(meta.label)+'</span></div>' +
+            (b.responsibleName ? '<div class="pet-breed">Responsable: '+esc(b.responsibleName)+'</div>' : '') +
+            '<div class="pet-meta">' +
+              (b.phone ? '<span>'+icon('phone')+'<a href="tel:'+esc(b.phone.replace(/\s+/g,''))+'">'+esc(b.phone)+'</a></span>' : '') +
+              (b.email ? '<span>'+icon('mail')+'<a href="mailto:'+esc(b.email)+'">'+esc(b.email)+'</a></span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        (b.description ? '<p class="pet-desc">'+esc(b.description)+'</p>' : '') +
+        (isMine ? (
+          '<div class="owner-row">' +
+            '<button class="btn btn-ghost btn-sm" data-action="edit-business" data-business-id="'+esc(b.id)+'">'+icon('pencil')+'Editar</button>' +
+            '<button class="btn btn-ghost btn-sm" data-action="delete-business" data-business-id="'+esc(b.id)+'">'+icon('trash')+'Eliminar</button>' +
+          '</div>'
+        ) : '') +
+      '</div>'
+    );
+  }
+
+  function renderAdoptionsSection(){
+    if(state.contactFilter !== 'adopciones') return '';
+
+    var html = '<h3 class="section-title" style="margin-top:4px;">' + icon('adopt') + 'Mascotas en adopción</h3>';
+    html += '<div class="screen-sub" style="margin-top:-6px;">Animales que están buscando una familia.</div>';
+
+    if(state.user && state.db && state.myId){
+      html += '<button type="button" class="btn btn-secondary btn-sm" data-action="add-adoption" style="margin-bottom:12px;">' + icon('plus') + 'Publicar una mascota en adopción</button>';
+    } else if(!state.db){
+      html += '<div class="hint" style="margin-bottom:12px;">Para publicar una mascota real en adopción, abrí esta página desde tu cuenta de Claude.</div>';
+    }
+
+    var source;
+    if(!state.db){
+      source = EXAMPLE_ADOPTIONS;
+    } else if(!state.adoptionsLoaded){
+      html += '<div class="empty" style="margin-bottom:22px;"><div class="spinner" style="margin:0 auto 8px"></div>Cargando…</div>';
+      return html;
+    } else {
+      source = state.adoptions;
+    }
+
+    html += source.length
+      ? '<div class="card-list" style="margin-bottom:22px;">' + source.map(renderAdoptionCard).join('') + '</div>'
+      : '<div class="empty" style="margin-bottom:22px;">' + icon('adopt') + '<div>Todavía no hay mascotas publicadas en adopción. ¡Sumá la primera con el botón de arriba!</div></div>';
+    return html;
+  }
+
+  function renderAdoptionCard(a){
+    var isMine = !a.example && state.myId && a.ownerId === state.myId;
+    var photo = a.photoUrl ? '<img src="'+esc(a.photoUrl)+'" alt="">' : icon('adopt');
+    var tags = [];
+    if(a.neutered) tags.push('Castrado/a');
+    if(a.vaccinated) tags.push('Vacunado/a');
+    if(a.dewormed) tags.push('Desparasitado/a');
+    return (
+      '<div class="pet-card' + (a.example ? ' is-example' : '') + '">' +
+        '<div class="pet-top">' +
+          '<div class="avatar">' + photo + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(a.name || a.species || 'Mascota')+'</span></div>' +
+            '<div class="pet-breed">'+esc(a.species||'')+(a.breed ? ' &middot; '+esc(a.breed) : '')+(a.age ? ' &middot; '+esc(a.age) : '')+'</div>' +
+          '</div>' +
+        '</div>' +
+        (tags.length ? '<div class="pet-meta" style="margin-top:8px;">' + tags.map(function(tg){ return '<span class="badge badge-safe">'+icon('check')+tg+'</span>'; }).join('') + '</div>' : '') +
+        (a.description ? '<p class="pet-desc">'+esc(a.description)+'</p>' : '') +
+        extraPhotosStrip(a) +
+        ((a.contactName || a.contactPhone) ? '<p class="pet-desc" style="color:var(--ink-soft);">Contacto: '+esc(a.contactName||'')+(a.contactPhone ? ' &middot; <a href="tel:'+esc(a.contactPhone.replace(/\s+/g,''))+'">'+esc(a.contactPhone)+'</a>' : '')+'</p>' : '') +
+        (isMine ? (
+          '<div class="owner-row">' +
+            '<button class="btn btn-ghost btn-sm" data-action="edit-adoption" data-adoption-id="'+esc(a.id)+'">'+icon('pencil')+'Editar</button>' +
+            '<button class="btn btn-ghost btn-sm" data-action="delete-adoption" data-adoption-id="'+esc(a.id)+'">'+icon('trash')+'Eliminar</button>' +
+          '</div>'
+        ) : '') +
+      '</div>'
+    );
+  }
+
+  function renderContactCard(c){
+    var meta = categoryMeta(c.category);
+    return (
+      '<div class="pet-card' + (c.example ? ' is-example' : '') + '">' +
+        '<div class="pet-top">' +
+          '<div class="avatar" style="border-radius:999px;">' + icon(meta.icon) + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(c.name)+'</span><span class="badge" style="background:var(--accent-soft);color:var(--accent-ink);">'+esc(meta.label)+'</span></div>' +
+            (c.phone ? '<div class="pet-meta"><span>'+icon('phone')+'<a href="tel:'+esc(c.phone.replace(/\s+/g,''))+'">'+esc(c.phone)+'</a></span></div>' : '') +
+          '</div>' +
+        '</div>' +
+        (c.address ? '<p class="pet-desc">' + icon('pin') + ' ' + esc(c.address) + ' &middot; <a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.address)+'" target="_blank" rel="noopener">Ver mapa</a></p>' : '') +
+        (c.notes ? '<p class="pet-desc">'+esc(c.notes)+'</p>' : '') +
+        (!c.example ? (
+          '<div class="owner-row">' +
+            '<button class="btn btn-ghost btn-sm" data-action="edit-contact" data-contact-id="'+esc(c.id)+'">'+icon('pencil')+'Editar</button>' +
+            '<button class="btn btn-ghost btn-sm" data-action="delete-contact" data-contact-id="'+esc(c.id)+'">'+icon('trash')+'Eliminar</button>' +
+          '</div>'
+        ) : '') +
+      '</div>'
+    );
+  }
+
+  /* ============ RENDER: COMMUNITY ============ */
+  function computeRanking(){
+    var byReporter = {}; // id -> {sightings:n, pets:Set}
+    state.allSightings.forEach(function(s){
+      var key = s.reporterId || 'anon';
+      if(!byReporter[key]) byReporter[key] = {id: s.reporterId||null, sightings:0, petIds:{}};
+      byReporter[key].sightings++;
+      if(s.petId) byReporter[key].petIds[s.petId] = true;
+    });
+    var rows = Object.keys(byReporter).map(function(key){
+      var r = byReporter[key];
+      var points = r.sightings * POINTS_PER_SIGHTING;
+      return {id:r.id, sightings:r.sightings, petsHelped: Object.keys(r.petIds).length, points:points, prize: prizeForPoints(points)};
+    });
+    rows.sort(function(a,b){ return b.points - a.points; });
+    return rows.slice(0,10);
+  }
+
+  function renderCommunity(){
+    var html = '';
+    html += '<h2 class="screen-title">Comunidad</h2>';
+    html += '<div class="screen-sub">Lo que la comunidad está buscando y logrando entre todos.</div>';
+
+    if(!state.db){
+      html += '<div class="demo-banner">' + icon('info') + '<span>Esta vista no tiene conexión a datos reales — es solo de ejemplo.</span></div>';
+    }
+
+    html += renderTipOfDay();
+
+    var lostCount = state.petsLostLoaded ? state.petsLost.length : null;
+    var foundCount = state.foundsLoaded ? state.founds.length : null;
+    html += '<div class="stat-row">' +
+      '<div class="stat-tile"><div class="stat-num">' + (lostCount==null ? '—' : lostCount) + '</div><div class="stat-label">buscando ahora</div></div>' +
+      '<div class="stat-tile"><div class="stat-num">' + (foundCount==null ? '—' : foundCount) + '</div><div class="stat-label">encontradas gracias a la comunidad</div></div>' +
+    '</div>';
+
+    html += '<h3 class="section-title">' + icon('sparkle') + 'Encontradas recientemente</h3>';
+    if(!state.foundsLoaded){
+      html += '<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Cargando…</div>';
+    } else if(state.founds.length===0){
+      html += '<div class="empty">' + icon('paw') + '<div>Todavía no hay casos resueltos por acá. Cuando una mascota perdida vuelva a casa, va a aparecer en esta lista.</div></div>';
+    } else {
+      html += '<div class="card-list">' + state.founds.slice(0,12).map(renderFoundCard).join('') + '</div>';
+    }
+
+    html += '<h3 class="section-title" style="margin-top:22px;">' + icon('trophy') + 'Ranking de héroes</h3>';
+    html += '<div class="screen-sub" style="margin-top:-6px;">Quiénes ayudaron a encontrar más mascotas reportando avistamientos.</div>';
+    if(!state.allSightingsLoaded){
+      html += '<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Cargando…</div>';
+    } else {
+      var ranking = computeRanking();
+      if(ranking.length===0){
+        html += '<div class="empty">' + icon('users') + '<div>Todavía nadie reportó avistamientos. ¡Tocá "La vi" en una mascota perdida y sé el primero del ranking!</div></div>';
+      } else {
+        ensureProfiles(ranking.map(function(r){ return r.id; }));
+        html += '<div class="rank-list">' + ranking.map(renderRankRow).join('') + '</div>';
+      }
+    }
+
+    html += '<h3 class="section-title" style="margin-top:22px;">' + icon('trophy') + 'Tabla de premios</h3>';
+    html += '<div class="screen-sub" style="margin-top:-6px;">Así se van desbloqueando reconocimientos a medida que sumás avisos.</div>';
+    html += renderPrizeTable();
+
+    return html;
+  }
+
+  function renderTipOfDay(){
+    return (
+      '<div class="tip-card">' +
+        '<div class="tip-icon">' + icon('bulb') + '</div>' +
+        '<div class="tip-body">' +
+          '<div class="tip-label">Consejo del día</div>' +
+          '<div class="tip-text">' + esc(tipOfDay()) + '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderFoundCard(f){
+    var dur = formatDuration(f.lostAt, f.foundAt);
+    return (
+      '<div class="pet-card">' +
+        '<div class="pet-top">' +
+          '<div class="avatar">' + initials(f.name) + '</div>' +
+          '<div class="pet-info">' +
+            '<div class="pet-name-row"><span class="pet-name">'+esc(f.name)+'</span><span class="badge badge-safe">Encontrada</span></div>' +
+            '<div class="pet-breed">'+esc(f.species||'')+(f.breed ? ' &middot; '+esc(f.breed) : '')+'</div>' +
+            '<div class="pet-meta">' +
+              (dur ? '<span>'+icon('clock')+'Estuvo perdida ' + dur + '</span>' : '') +
+              '<span>' + icon('sparkle') + timeAgo(f.foundAt) + '</span>' +
+              (f.sightingsCount ? '<span>' + icon('eye') + f.sightingsCount + ' aviso' + (f.sightingsCount>1?'s':'') + ' de la comunidad</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderRankRow(r, i){
+    var tier = i===0 ? ' gold' : i===1 ? ' silver' : i===2 ? ' bronze' : '';
+    return (
+      '<div class="rank-row">' +
+        '<div class="rank-pos' + tier + '">' + (i+1) + '</div>' +
+        '<div class="rank-name">' + esc(profileName(r.id)) + '<span class="rank-sub">' + r.petsHelped + ' mascota' + (r.petsHelped>1?'s':'') + ' &middot; ' + r.points + ' pts</span></div>' +
+        '<div class="rank-prize">' + esc(r.prize.name) + '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderPrizeTable(){
+    var rows = PRIZE_TIERS.filter(function(t){ return t.minPoints > 0; }).map(function(t){
+      return '<tr><td class="mono">' + t.minPoints + '+</td><td>' + esc(t.name) + '</td><td>' + esc(t.prize) + '</td></tr>';
+    }).join('');
+    return (
+      '<div class="prize-table-wrap">' +
+        '<table class="prize-table">' +
+          '<thead><tr><th>Puntaje</th><th>Nivel</th><th>Premios</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+      '<div class="standalone-hint" style="margin-top:8px;">Puntos ficticios: sumás ' + POINTS_PER_SIGHTING + ' por cada aviso que reportás. Son solo para reconocer a quienes ayudan — no son premios reales ni canjeables.</div>'
+    );
+  }
+
+  /* ============ MAIN RENDER ============ */
+  function findPet(id){
+    return state.petsLost.filter(function(p){return p.id===id;})[0]
+      || state.myPets.filter(function(p){return p.id===id;})[0]
+      || EXAMPLE_PETS.filter(function(p){return p.id===id;})[0]
+      || null;
+  }
+  function findContact(id){
+    return state.contacts.filter(function(c){return c.id===id;})[0] || null;
+  }
+
+  function render(){
+    try{
+      renderUnsafe();
+    }catch(err){
+      console.error('Huellas render error:', err);
+      var app = document.getElementById('app');
+      if(app){
+        app.innerHTML = '<div class="empty">' + icon('paw') + '<div>Algo no salió bien mostrando esta pantalla. Probá tocar la otra pestaña, o recargar la página.</div></div>';
+      }
+    }
+  }
+
+  function renderUnsafe(){
+    var app = document.getElementById('app');
+    var mark0 = document.querySelector('.brand .mark');
+    if(mark0) mark0.innerHTML = icon('paw');
+    var logoutBtn = document.getElementById('logout-btn');
+    var infoBtn0 = document.getElementById('info-btn');
+
+    if(!state.currentUser){
+      if(logoutBtn) logoutBtn.hidden = true;
+      if(infoBtn0) infoBtn0.hidden = true;
+      app.innerHTML = state.authView ? renderAuthScreen() : '<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Cargando…</div>';
+      var existingFab0 = document.getElementById('fab-add');
+      if(existingFab0) existingFab0.remove();
+      renderModal();
+      return;
+    }
+    if(logoutBtn){ logoutBtn.hidden = false; logoutBtn.innerHTML = icon('logout'); }
+    if(infoBtn0){ infoBtn0.hidden = false; infoBtn0.innerHTML = icon('info'); }
+
+    var tabsHtml = '<div class="segmented">' +
+      '<button class="'+(state.tab==='home'?'active':'')+'" data-tab="home">'+icon('paw')+'Inicio</button>' +
+      '<button class="'+(state.tab==='mine'?'active':'')+'" data-tab="mine">'+icon('house')+'Mis mascotas</button>' +
+      '<button class="'+(state.tab==='directory'?'active':'')+'" data-tab="directory">'+icon('book')+'Directorio</button>' +
+      '<button class="'+(state.tab==='community'?'active':'')+'" data-tab="community">'+icon('trophy')+'Comunidad</button>' +
+    '</div>';
+    var screenHtml = state.tab==='home' ? (state.homeView==='lost' ? renderHome() : renderHomeMenu())
+      : state.tab==='directory' ? renderDirectory()
+      : state.tab==='community' ? renderCommunity()
+      : renderMine();
+    app.innerHTML = tabsHtml + screenHtml;
+
+    var fabTabAction = state.tab==='mine' ? 'add-pet' : (state.tab==='directory' ? 'add-contact' : null);
+    if(fabTabAction && state.myId){
+      var fab = document.getElementById('fab-add');
+      if(!fab){
+        fab = document.createElement('button');
+        fab.className='fab'; fab.id='fab-add';
+        fab.innerHTML = icon('plus');
+        document.getElementById('app-root').appendChild(fab);
+      }
+      fab.setAttribute('data-action', fabTabAction);
+    } else {
+      var existingFab = document.getElementById('fab-add');
+      if(existingFab) existingFab.remove();
+    }
+
+    renderModal();
+  }
+
+  /* ============ MODALS ============ */
+  function closeSheet(){ state.sheet = null; render(); }
+
+  function renderModal(){
+    var root = document.getElementById('modal-root');
+    if(!state.sheet){ root.innerHTML=''; return; }
+    var s = state.sheet;
+    var html = '';
+    if(s.type==='info'){
+      html = modalWrap('Cómo funciona Huellas',
+        '<div style="display:flex;flex-direction:column;gap:14px;">' +
+          infoStep('1','Cargá la ficha de tu mascota','Nombre, foto y datos de contacto, antes de que se pierda.') +
+          infoStep('2','Si se pierde, marcala como "Perdida"','Guardamos dónde la viste por última vez.') +
+          infoStep('3','Cualquiera que la reconozca toca "La vi"','Se comparte su ubicación al instante y te avisamos.') +
+        '</div>'
+      , true);
+    } else if(s.type==='report'){
+      var pet = s.pet;
+      html = modalWrap('Reportar un avistamiento',
+        petMini(pet) +
+        '<form id="report-form">' +
+          locationField(s) +
+          '<div class="field"><label for="rep-note">¿Algo más para contar? (opcional)</label><textarea id="rep-note" placeholder="Ej: estaba cerca de la plaza, parecía tranquila…"></textarea></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="rep-name">Tu nombre (opcional)</label><input type="text" id="rep-name" placeholder="Para que te puedan contactar"></div>' +
+            '<div class="field"><label for="rep-phone">Tu teléfono (opcional)</label><input type="tel" id="rep-phone" placeholder="11 5555-5555"></div>' +
+          '</div>' +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primary">'+icon('eye')+'Enviar aviso</button>' +
+          '</div>' +
+        '</form>'
+      , true);
+    } else if(s.type==='pet'){
+      var p = s.pet || {};
+      html = modalWrap(s.pet ? 'Editar ficha' : 'Nueva ficha de mascota',
+        (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+        '<form id="pet-form" novalidate>' +
+          '<div id="pet-form-error" class="hint" style="display:none;color:var(--alert);font-weight:600;margin-bottom:10px;"></div>' +
+          '<div class="field" style="margin-top:0">' +
+            '<label>Fotos (hasta '+MAX_PET_PHOTOS+')</label>' +
+            '<div class="photo-grid" id="photo-grid" data-input-id="pet-photo-input">' + renderPhotoGridInner(state.sheet, 'pet-photo-input') + '</div>' +
+            '<input type="file" id="pet-photo-input" accept="image/*" multiple hidden>' +
+            '<div class="hint" style="margin-top:6px;">Tocá el + para agregar fotos, podés elegir varias a la vez.</div>' +
+          '</div>' +
+          '<div class="field" style="margin-top:14px"><label for="pf-name">Nombre*</label><input type="text" id="pf-name" value="'+esc(p.name||'')+'"></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="pf-species">Especie*</label><select id="pf-species">' +
+              ['Perro','Gato','Otro'].map(function(opt){ return '<option value="'+opt+'"'+(p.species===opt?' selected':'')+'>'+opt+'</option>'; }).join('') +
+            '</select></div>' +
+            '<div class="field"><label for="pf-size">Tamaño</label><select id="pf-size">' +
+              ['','Pequeño','Mediano','Grande'].map(function(opt){ return '<option value="'+opt+'"'+(p.size===opt?' selected':'')+'>'+(opt||'—')+'</option>'; }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="pf-breed">Raza</label><input type="text" id="pf-breed" value="'+esc(p.breed||'')+'"></div>' +
+            '<div class="field"><label for="pf-color">Color</label><input type="text" id="pf-color" value="'+esc(p.color||'')+'"></div>' +
+          '</div>' +
+          '<div class="field"><label for="pf-desc">Señas particulares</label><textarea id="pf-desc" placeholder="Collar, manchas, cicatrices, temperamento…">'+esc(p.description||'')+'</textarea></div>' +
+          '<div class="field"><label for="pf-cname">Tu nombre de contacto</label><input type="text" id="pf-cname" value="'+esc(p.contactName||'')+'"></div>' +
+          '<div class="field"><label for="pf-cphone">Teléfono de contacto (opcional)</label><input type="tel" id="pf-cphone" value="'+esc(p.contactPhone||'')+'" placeholder="11 5555-5555"></div>' +
+          '<div class="field"><label for="pf-cnote">Nota de contacto</label><input type="text" id="pf-cnote" value="'+esc(p.contactNote||'')+'" placeholder="Ej: preferís WhatsApp"></div>' +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.pet ? 'Guardar cambios' : 'Crear ficha')+'</button>' +
+          '</div>' +
+        '</form>'
+      , true);
+    } else if(s.type==='contact'){
+      var ct = s.contact || {};
+      html = modalWrap(s.contact ? 'Editar contacto' : 'Nuevo contacto',
+        (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+        '<form id="contact-form" novalidate>' +
+          '<div id="contact-form-error" class="hint" style="display:none;color:var(--alert);font-weight:600;margin-bottom:10px;"></div>' +
+          '<div class="field"><label for="cf-category">Categoría*</label><select id="cf-category">' +
+            CATEGORIES.map(function(c){ return '<option value="'+c.key+'"'+(ct.category===c.key?' selected':'')+'>'+c.label+'</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="field"><label for="cf-name">Nombre*</label><input type="text" id="cf-name" value="'+esc(ct.name||'')+'" placeholder="Ej: Veterinaria San Martín"></div>' +
+          '<div class="field"><label for="cf-phone">Teléfono</label><input type="tel" id="cf-phone" value="'+esc(ct.phone||'')+'" placeholder="11 5555-5555"></div>' +
+          '<div class="field"><label for="cf-address">Dirección</label><input type="text" id="cf-address" value="'+esc(ct.address||'')+'"></div>' +
+          '<div class="field"><label for="cf-notes">Notas</label><textarea id="cf-notes" placeholder="Horarios, referencias, lo que sirva recordar…">'+esc(ct.notes||'')+'</textarea></div>' +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.contact ? 'Guardar cambios' : 'Agregar contacto')+'</button>' +
+          '</div>' +
+        '</form>'
+      , true);
+    } else if(s.type==='business'){
+      var bz = s.business || {};
+      html = modalWrap(s.business ? 'Editar establecimiento' : 'Registrar mi establecimiento',
+        (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+        '<form id="business-form" novalidate>' +
+          '<div id="business-form-error" class="hint" style="display:none;color:var(--alert);font-weight:600;margin-bottom:10px;"></div>' +
+          '<div class="photo-pick">' +
+            '<div class="avatar" id="photo-preview">' + (bz.photoUrl ? '<img src="'+esc(bz.photoUrl)+'" alt="">' : icon('store')) + '</div>' +
+            '<div><button type="button" class="btn btn-secondary btn-sm" data-action="pick-photo" data-photo-target="biz-photo-input">'+icon('camera')+'Foto del establecimiento</button><input type="file" id="biz-photo-input" accept="image/*" hidden></div>' +
+          '</div>' +
+          '<div class="field" style="margin-top:14px"><label for="bf-category">Categoría*</label><select id="bf-category">' +
+            BUSINESS_CATEGORIES.map(function(c){ return '<option value="'+c.key+'"'+(bz.category===c.key?' selected':'')+'>'+c.label+'</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="field"><label for="bf-name">Nombre del establecimiento*</label><input type="text" id="bf-name" value="'+esc(bz.name||'')+'" placeholder="Ej: Veterinaria San Martín"></div>' +
+          '<div class="field"><label for="bf-responsible">Responsable*</label><input type="text" id="bf-responsible" value="'+esc(bz.responsibleName||'')+'" placeholder="Nombre de quien está a cargo"></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="bf-email">Email*</label><input type="email" id="bf-email" value="'+esc(bz.email||'')+'" placeholder="contacto@negocio.com"></div>' +
+            '<div class="field"><label for="bf-phone">Teléfono (opcional)</label><input type="tel" id="bf-phone" value="'+esc(bz.phone||'')+'" placeholder="11 5555-5555"></div>' +
+          '</div>' +
+          '<div class="field"><label for="bf-desc">¿Qué hace tu establecimiento?</label><textarea id="bf-desc" placeholder="Ej: clínica veterinaria, atención de urgencias, horarios…">'+esc(bz.description||'')+'</textarea></div>' +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.business ? 'Guardar cambios' : 'Registrar establecimiento')+'</button>' +
+          '</div>' +
+        '</form>'
+      , true);
+    } else if(s.type==='adoption'){
+      var ad = s.adoption || {};
+      html = modalWrap(s.adoption ? 'Editar publicación' : 'Publicar una mascota en adopción',
+        (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+        '<form id="adoption-form" novalidate>' +
+          '<div id="adoption-form-error" class="hint" style="display:none;color:var(--alert);font-weight:600;margin-bottom:10px;"></div>' +
+          '<div class="field" style="margin-top:0">' +
+            '<label>Fotos (hasta '+MAX_PET_PHOTOS+')</label>' +
+            '<div class="photo-grid" id="photo-grid" data-input-id="adopt-photo-input">' + renderPhotoGridInner(state.sheet, 'adopt-photo-input') + '</div>' +
+            '<input type="file" id="adopt-photo-input" accept="image/*" multiple hidden>' +
+            '<div class="hint" style="margin-top:6px;">Tocá el + para agregar fotos, podés elegir varias a la vez.</div>' +
+          '</div>' +
+          '<div class="field" style="margin-top:14px"><label for="af-name">Nombre (opcional)</label><input type="text" id="af-name" value="'+esc(ad.name||'')+'" placeholder="Si todavía no tiene nombre, dejalo en blanco"></div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="af-species">Especie*</label><select id="af-species">' +
+              ['Perro','Gato','Otro'].map(function(opt){ return '<option value="'+opt+'"'+(ad.species===opt?' selected':'')+'>'+opt+'</option>'; }).join('') +
+            '</select></div>' +
+            '<div class="field"><label for="af-age">Edad</label><input type="text" id="af-age" value="'+esc(ad.age||'')+'" placeholder="Ej: 2 años, cachorro"></div>' +
+          '</div>' +
+          '<div class="field"><label for="af-breed">Raza</label><input type="text" id="af-breed" value="'+esc(ad.breed||'')+'" placeholder="Ej: mestizo"></div>' +
+          '<div class="field"><label for="af-desc">Características*</label><textarea id="af-desc" placeholder="Personalidad, tamaño, con quién se lleva bien…">'+esc(ad.description||'')+'</textarea></div>' +
+          '<div class="checkbox-row">' +
+            '<label class="checkbox-field"><input type="checkbox" id="af-neutered"'+(ad.neutered?' checked':'')+'> Castrado/a</label>' +
+            '<label class="checkbox-field"><input type="checkbox" id="af-vaccinated"'+(ad.vaccinated?' checked':'')+'> Vacunado/a</label>' +
+            '<label class="checkbox-field"><input type="checkbox" id="af-dewormed"'+(ad.dewormed?' checked':'')+'> Desparasitado/a</label>' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field"><label for="af-cname">Contacto</label><input type="text" id="af-cname" value="'+esc(ad.contactName||'')+'" placeholder="Nombre o refugio"></div>' +
+            '<div class="field"><label for="af-cphone">Teléfono</label><input type="tel" id="af-cphone" value="'+esc(ad.contactPhone||'')+'" placeholder="11 5555-5555"></div>' +
+          '</div>' +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.adoption ? 'Guardar cambios' : 'Publicar')+'</button>' +
+          '</div>' +
+        '</form>'
+      , true);
+    } else if(s.type==='donate'){
+      var cfg = state.db ? state.donationConfig : EXAMPLE_DONATION_CONFIG;
+      var hasMp = !!(cfg && cfg.mpAlias);
+      var hasPaypal = !!(cfg && cfg.paypalAlias);
+      var canEditDon = canEditDonation(cfg);
+      var isClaimingDon = state.db && !(cfg && cfg.adminId);
+      if(s.settingsMode){
+        html = !canEditDon ? modalWrap('Cargar alias para recibir colaboraciones',
+          '<div class="empty">' + icon('info') + '<div>Estos alias ya tienen una persona administradora asignada, así que no los podés editar desde esta cuenta.</div></div>' +
+          '<div class="sheet-footer"><button type="button" class="btn btn-ghost btn-block" data-action="close-sheet">Cerrar</button></div>'
+        , true) : modalWrap('Cargar alias para recibir colaboraciones',
+          (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+          '<div class="screen-sub" style="margin-top:0;">Este alias lo va a ver toda la comunidad cuando quiera colaborar con Huellas.</div>' +
+          (isClaimingDon ? '<div class="demo-banner">'+icon('info')+'<span>Los alias son fijos: la primera vez que los guardás, quedás como <strong>administrador/a</strong> y de ahí en más solo vos vas a poder editarlos desde esta cuenta.</span></div>' : '') +
+          '<form id="donation-settings-form" novalidate>' +
+            '<div class="field"><label for="ds-mp">Alias de Mercado Pago</label><input type="text" id="ds-mp" value="'+esc(cfg.mpAlias||'')+'" placeholder="Ej: huellas.colabora"></div>' +
+            '<div class="field"><label for="ds-pp">Alias o email de PayPal</label><input type="text" id="ds-pp" value="'+esc(cfg.paypalAlias||'')+'" placeholder="Ej: colaborar@huellas.com"></div>' +
+            '<div class="sheet-footer">' +
+              '<button type="button" class="btn btn-ghost" data-action="donate-back">Volver</button>' +
+              '<button type="submit" class="btn btn-accent">'+icon('check')+'Guardar alias</button>' +
+            '</div>' +
+          '</form>'
+        , true);
+      } else {
+        html = modalWrap('Colaborar con Huellas',
+          '<div class="tip-card" style="margin-bottom:16px;">' +
+            '<div class="tip-icon">' + icon('heart') + '</div>' +
+            '<div class="tip-body"><div class="tip-text">Huellas se mantiene gracias a las colaboraciones de la gente. Si la app te sirve, tu aporte ayuda a que siga funcionando.</div></div>' +
+          '</div>' +
+          (!state.db ? '<div class="demo-banner">'+icon('info')+'<span>Vista de ejemplo — abrí esta página desde tu cuenta de Claude para ver los alias reales.</span></div>' : '') +
+          '<div class="field-row">' +
+            '<div class="field"><label for="dn-amount">Monto (opcional)</label><input type="number" min="0" step="0.01" id="dn-amount" value="'+esc(s.amount||'')+'" placeholder="Ej: 2000"></div>' +
+            '<div class="field"><label for="dn-currency">Moneda</label><select id="dn-currency">' +
+              ['ARS','USD'].map(function(cur){ return '<option value="'+cur+'"'+(s.currency===cur?' selected':'')+'>'+cur+'</option>'; }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div class="field"><label>Medio de pago</label><div class="chip-row" style="margin-bottom:0;">' +
+            '<button type="button" class="chip'+(s.method==='mp'?' active':'')+'" data-action="donate-method" data-method="mp">'+icon('store')+'Mercado Pago</button>' +
+            '<button type="button" class="chip'+(s.method==='paypal'?' active':'')+'" data-action="donate-method" data-method="paypal">'+icon('mail')+'PayPal</button>' +
+          '</div></div>' +
+          donateMethodBlock(s, cfg) +
+          (canEditDon ? '<button type="button" class="link-btn" style="margin-top:14px;" data-action="donate-settings">' + (hasMp||hasPaypal ? 'Editar los alias de colaboración' : 'Cargar los alias de colaboración') + '</button>' : '') +
+          '<div class="sheet-footer">' +
+            '<button type="button" class="btn btn-ghost btn-block" data-action="close-sheet">Cerrar</button>' +
+          '</div>'
+        , true);
+      }
+    } else if(s.type==='mark-lost'){
+      html = modalWrap('Marcar a ' + esc(s.pet.name) + ' como perdida',
+        petMini(s.pet) +
+        '<p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:12px;">Vamos a guardar dónde la viste por última vez, para que la comunidad sepa dónde buscarla.</p>' +
+        locationField(s) +
+        '<div class="sheet-footer">' +
+          '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+          '<button type="button" class="btn btn-primary" data-action="confirm-lost" '+(s.loc?'':'disabled')+'>'+icon('eye')+'Confirmar</button>' +
+        '</div>'
+      , true);
+    } else if(s.type==='confirm-delete'){
+      var deleteMeta = {
+        contact: {obj:s.contact, label:'el contacto'},
+        business: {obj:s.business, label:'el establecimiento'},
+        adoption: {obj:s.adoption, label:'la publicación de'},
+        pet: {obj:s.pet, label:'la ficha de'}
+      }[s.kind] || {obj:s.pet, label:'la ficha de'};
+      var delName = deleteMeta.obj.name || deleteMeta.obj.species || 'esta mascota';
+      var delLabel = deleteMeta.label;
+      var isSimpleDelete = s.kind !== 'pet';
+      html = modalWrap('¿Eliminar ' + delLabel + ' ' + esc(delName) + '?',
+        '<p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:16px;">' + (isSimpleDelete ? 'Esta acción no se puede deshacer.' : 'Se van a borrar también los avisos de avistamiento asociados. Esta acción no se puede deshacer.') + '</p>' +
+        '<div class="sheet-footer">' +
+          '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
+          '<button type="button" class="btn btn-primary" data-action="confirm-delete">'+icon('trash')+'Eliminar</button>' +
+        '</div>'
+      , false);
+    }
+    root.innerHTML = '<div class="backdrop" id="backdrop">' + html + '</div>';
+
+    function bindMultiPhotoInput(inputId){
+      var input = document.getElementById(inputId);
+      if(!input) return;
+      input.addEventListener('change', function(e){
+        var files = e.target.files ? Array.prototype.slice.call(e.target.files) : [];
+        if(!files.length || !state.sheet) return;
+        var remaining = MAX_PET_PHOTOS - ((state.sheet.existingPhotos||[]).length + (state.sheet.newPhotos||[]).length);
+        if(remaining <= 0){ showToast('Ya llegaste al máximo de ' + MAX_PET_PHOTOS + ' fotos.'); e.target.value=''; return; }
+        files = files.slice(0, remaining);
+        var pending = files.length;
+        files.forEach(function(file){
+          var reader = new FileReader();
+          reader.onload = function(ev){
+            state.sheet.newPhotos = state.sheet.newPhotos || [];
+            state.sheet.newPhotos.push({file:file, previewUrl:ev.target.result});
+            pending--;
+            if(pending===0) updatePhotoGrid();
+          };
+          reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+      });
+    }
+    bindMultiPhotoInput('pet-photo-input');
+    bindMultiPhotoInput('adopt-photo-input');
+    var bizPhotoInput = document.getElementById('biz-photo-input');
+    if(bizPhotoInput){
+      bizPhotoInput.addEventListener('change', function(e){
+        var file = e.target.files && e.target.files[0];
+        if(!file) return;
+        state.sheet.pendingPhotoFile = file;
+        var reader = new FileReader();
+        reader.onload = function(ev){
+          var prev = document.getElementById('photo-preview');
+          if(prev) prev.innerHTML = '<img src="'+ev.target.result+'" alt="">';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  function modalWrap(title, body, closable){
+    return '<div class="sheet" role="dialog" aria-modal="true">' +
+      '<div class="sheet-head"><h3 class="sheet-title">'+esc(title)+'</h3>' + (closable !== false ? '<button class="icon-btn" data-action="close-sheet">'+icon('x')+'</button>' : '') + '</div>' +
+      body +
+    '</div>';
+  }
+  function infoStep(n, title, body){
+    return '<div style="display:flex;gap:12px;"><div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--accent);flex:none;width:26px;">'+n+'</div><div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px;">'+esc(title)+'</div><div style="font-size:13px;color:var(--ink-soft);">'+esc(body)+'</div></div></div>';
+  }
+  function petMini(pet){
+    var photo = pet.photoUrl ? '<img src="'+esc(pet.photoUrl)+'" alt="">' : initials(pet.name);
+    return '<div class="sheet-pet"><div class="avatar" style="width:40px;height:40px;">'+photo+'</div><div><div style="font-weight:700;">'+esc(pet.name)+'</div><div style="font-size:12px;color:var(--ink-soft);">'+esc(pet.species)+(pet.breed?' · '+esc(pet.breed):'')+'</div></div></div>';
+  }
+  var MAX_PET_PHOTOS = 5;
+  function renderPhotoGridInner(sheet, inputId){
+    inputId = inputId || 'pet-photo-input';
+    var tiles = '';
+    (sheet.existingPhotos||[]).forEach(function(p, i){
+      tiles += '<div class="photo-tile"><img src="'+esc(p.url)+'" alt=""><button type="button" class="remove-photo" data-action="remove-existing-photo" data-index="'+i+'" aria-label="Quitar foto">'+icon('x')+'</button></div>';
+    });
+    (sheet.newPhotos||[]).forEach(function(p, i){
+      tiles += '<div class="photo-tile"><img src="'+esc(p.previewUrl)+'" alt=""><button type="button" class="remove-photo" data-action="remove-new-photo" data-index="'+i+'" aria-label="Quitar foto">'+icon('x')+'</button></div>';
+    });
+    var total = (sheet.existingPhotos||[]).length + (sheet.newPhotos||[]).length;
+    if(total < MAX_PET_PHOTOS){
+      tiles += '<button type="button" class="photo-tile add-tile" data-action="pick-photo" data-photo-target="'+inputId+'" aria-label="Agregar foto">'+icon('camera')+'</button>';
+    }
+    return tiles;
+  }
+  function updatePhotoGrid(){
+    var grid = document.getElementById('photo-grid');
+    if(grid && state.sheet) grid.innerHTML = renderPhotoGridInner(state.sheet, grid.getAttribute('data-input-id'));
+  }
+  function extraPhotosStrip(pet){
+    if(!pet.photoUrls || pet.photoUrls.length<2) return '';
+    return '<div class="photo-strip">' + pet.photoUrls.slice(1, MAX_PET_PHOTOS).map(function(url){
+      return '<a href="'+esc(url)+'" target="_blank" rel="noopener" class="photo-strip-item"><img src="'+esc(url)+'" alt=""></a>';
+    }).join('') + '</div>';
+  }
+  function locationField(s){
+    var loc = s.loc;
+    var html = '<div class="field"><label>Ubicación</label><div class="loc-box">';
+    if(loc){
+      html += '<div class="loc-status">' + icon('check') + 'Ubicación capturada</div>';
+      html += '<div class="loc-coords mono">' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ' &middot; <a href="'+mapsLink(loc.lat,loc.lng)+'" target="_blank" rel="noopener">ver en el mapa</a></div>';
+      html += '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" data-action="get-location" data-target="'+esc(s.type)+'">Volver a ubicar</button>';
+    } else {
+      html += '<button type="button" class="btn btn-accent btn-block" data-action="get-location" data-target="'+esc(s.type)+'">' + icon('pin') + 'Usar mi ubicación actual</button>';
+      html += '<div class="hint">Tu navegador va a pedirte permiso de ubicación. Si preferís no compartirla, podés escribir coordenadas manualmente.</div>';
+      html += '<button type="button" class="link-btn manual-toggle" data-action="toggle-manual">Ingresar ubicación manualmente</button>';
+      if(s.manual){
+        html += '<div class="field-row" style="margin-top:10px">' +
+          '<div class="field"><label for="man-lat">Latitud</label><input type="number" step="0.00001" id="man-lat"></div>' +
+          '<div class="field"><label for="man-lng">Longitud</label><input type="number" step="0.00001" id="man-lng"></div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="save-manual-location" data-target="'+esc(s.type)+'">Usar estas coordenadas</button>';
+      }
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  /* ============ EVENTS ============ */
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-action], [data-tab]');
+    if(!t) return;
+    var action = t.getAttribute('data-action');
+    var tab = t.getAttribute('data-tab');
+
+    if(tab){ state.tab = tab; if(tab==='home'){ state.homeView = null; } render(); return; }
+
+    if(action === 'auth-switch'){ state.authView = (state.authView==='register') ? 'login' : 'register'; state.authError=''; render(); return; }
+    if(action === 'logout'){ logout(); return; }
+
+    if(action === 'go-lost-list'){ state.homeView = 'lost'; render(); return; }
+    if(action === 'go-home-menu'){ state.homeView = null; render(); return; }
+    if(action === 'add-pet-shortcut'){ state.tab = 'mine'; state.sheet = {type:'pet', pet:null, existingPhotos:[], newPhotos:[]}; render(); return; }
+    if(action === 'go-adoptions'){ state.tab = 'directory'; state.contactFilter = 'adopciones'; render(); return; }
+    if(action === 'go-directory'){ state.tab = 'directory'; state.contactFilter = 'all'; render(); return; }
+    if(action === 'go-community'){ state.tab = 'community'; render(); return; }
+    if(action === 'go-mine'){ state.tab = 'mine'; render(); return; }
+
+    if(action === 'use-location'){
+      t.disabled = true; t.textContent = 'Activando…';
+      getLocation().then(function(loc){ state.myLocation = loc; render(); })['catch'](function(){
+        showToast('No pudimos acceder a tu ubicación. Podés activarla desde los permisos del navegador.');
+        render();
+      });
+      return;
+    }
+    if(action === 'use-location-for-search'){
+      t.disabled = true; t.innerHTML = '<span class="spinner"></span> Activando…';
+      getLocation().then(function(loc){ state.myLocation = loc; render(); })['catch'](function(){
+        showToast('No pudimos acceder a tu ubicación. Igual podés buscar sin ella desde Google Maps.');
+        render();
+      });
+      return;
+    }
+    if(action === 'info-open'){ state.sheet = {type:'info'}; render(); return; }
+    if(action === 'close-sheet'){ closeSheet(); return; }
+    if(action === 'toggle-notif'){
+      if(!('Notification' in window)){ showToast('Tu navegador no soporta notificaciones.'); return; }
+      if(state.notifPermission === 'granted'){ showToast('Los avisos ya están activados en este navegador.'); return; }
+      Notification.requestPermission().then(function(perm){
+        state.notifPermission = perm; render();
+        if(perm==='granted') showToast('Avisos activados en este navegador.');
+        else if(perm==='denied') showToast('Quedaron bloqueados. Podés habilitarlos desde la configuración del sitio.');
+      })['catch'](function(){ showToast('No se pudieron activar los avisos acá.'); });
+      return;
+    }
+    if(action === 'open-report'){
+      var pet = findPet(t.getAttribute('data-pet-id'));
+      if(pet) { state.sheet = {type:'report', pet:pet, loc:null, manual:false}; render(); }
+      return;
+    }
+    if(action === 'add-pet'){ state.sheet = {type:'pet', pet:null, existingPhotos:[], newPhotos:[]}; render(); return; }
+    if(action === 'edit-pet'){
+      var petE = findPet(t.getAttribute('data-pet-id'));
+      if(petE) {
+        var initPhotos = [];
+        if(petE.photoUrls && petE.photoUrls.length){
+          initPhotos = petE.photoUrls.map(function(url, i){ return {assetId: (petE.photoAssetIds||[])[i]||null, url:url}; });
+        } else if(petE.photoUrl){
+          initPhotos = [{assetId: petE.photoAssetId||null, url: petE.photoUrl}];
+        }
+        state.sheet = {type:'pet', pet:petE, existingPhotos:initPhotos, newPhotos:[]};
+        render();
+      }
+      return;
+    }
+    if(action === 'delete-pet'){
+      var petD = findPet(t.getAttribute('data-pet-id'));
+      if(petD) { state.sheet = {type:'confirm-delete', kind:'pet', pet:petD}; render(); }
+      return;
+    }
+    if(action === 'add-contact'){ state.sheet = {type:'contact', contact:null}; render(); return; }
+    if(action === 'edit-contact'){
+      var ctE = findContact(t.getAttribute('data-contact-id'));
+      if(ctE) { state.sheet = {type:'contact', contact:ctE}; render(); }
+      return;
+    }
+    if(action === 'delete-contact'){
+      var ctD = findContact(t.getAttribute('data-contact-id'));
+      if(ctD) { state.sheet = {type:'confirm-delete', kind:'contact', contact:ctD}; render(); }
+      return;
+    }
+    if(action === 'add-business'){ state.sheet = {type:'business', business:null}; render(); return; }
+    if(action === 'edit-business'){
+      var bzE = findBusiness(t.getAttribute('data-business-id'));
+      if(bzE) { state.sheet = {type:'business', business:bzE}; render(); }
+      return;
+    }
+    if(action === 'delete-business'){
+      var bzD = findBusiness(t.getAttribute('data-business-id'));
+      if(bzD) { state.sheet = {type:'confirm-delete', kind:'business', business:bzD}; render(); }
+      return;
+    }
+    if(action === 'add-adoption'){ state.sheet = {type:'adoption', adoption:null, existingPhotos:[], newPhotos:[]}; render(); return; }
+    if(action === 'open-donate'){ state.sheet = {type:'donate', method: defaultDonationMethod(), amount:'', currency:'ARS', settingsMode:false}; render(); return; }
+    if(action === 'edit-adoption'){
+      var adE = findAdoption(t.getAttribute('data-adoption-id'));
+      if(adE) {
+        var initAdPhotos = [];
+        if(adE.photoUrls && adE.photoUrls.length){
+          initAdPhotos = adE.photoUrls.map(function(url, i){ return {assetId: (adE.photoAssetIds||[])[i]||null, url:url}; });
+        } else if(adE.photoUrl){
+          initAdPhotos = [{assetId: adE.photoAssetId||null, url: adE.photoUrl}];
+        }
+        state.sheet = {type:'adoption', adoption:adE, existingPhotos:initAdPhotos, newPhotos:[]};
+        render();
+      }
+      return;
+    }
+    if(action === 'delete-adoption'){
+      var adD = findAdoption(t.getAttribute('data-adoption-id'));
+      if(adD) { state.sheet = {type:'confirm-delete', kind:'adoption', adoption:adD}; render(); }
+      return;
+    }
+    if(action === 'filter-category'){
+      state.contactFilter = t.getAttribute('data-cat');
+      render();
+      return;
+    }
+    if(action === 'donate-method'){
+      if(state.sheet){
+        var dnAmountEl = document.getElementById('dn-amount'), dnCurrencyEl = document.getElementById('dn-currency');
+        if(dnAmountEl) state.sheet.amount = dnAmountEl.value;
+        if(dnCurrencyEl) state.sheet.currency = dnCurrencyEl.value;
+        state.sheet.method = t.getAttribute('data-method');
+      }
+      render();
+      return;
+    }
+    if(action === 'donate-settings'){
+      if(!canEditDonation(state.db ? state.donationConfig : EXAMPLE_DONATION_CONFIG)){
+        showToast('Solo la persona administradora de Huellas puede editar estos alias.');
+        return;
+      }
+      if(state.sheet){
+        var dsAmountEl = document.getElementById('dn-amount'), dsCurrencyEl = document.getElementById('dn-currency');
+        if(dsAmountEl) state.sheet.amount = dsAmountEl.value;
+        if(dsCurrencyEl) state.sheet.currency = dsCurrencyEl.value;
+        state.sheet.settingsMode = true;
+      }
+      render();
+      return;
+    }
+    if(action === 'donate-back'){
+      if(state.sheet) state.sheet.settingsMode = false;
+      render();
+      return;
+    }
+    if(action === 'copy-donation-alias'){
+      var aliasVal = t.getAttribute('data-alias') || '';
+      if(aliasVal && navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(aliasVal).then(function(){ showToast('Alias copiado.'); })['catch'](function(){ showToast('No pudimos copiar. Copialo manualmente: ' + aliasVal); });
+      } else {
+        showToast('Copialo manualmente: ' + aliasVal);
+      }
+      return;
+    }
+    if(action === 'confirm-delete'){
+      if(state.sheet && state.sheet.kind==='contact') deleteContact(state.sheet.contact);
+      else if(state.sheet && state.sheet.kind==='business') deleteBusiness(state.sheet.business);
+      else if(state.sheet && state.sheet.kind==='adoption') deleteAdoption(state.sheet.adoption);
+      else deletePet(state.sheet.pet);
+      return;
+    }
+    if(action === 'mark-safe'){
+      var petS = findPet(t.getAttribute('data-pet-id'));
+      if(petS && petS.status !== 'segura') setPetStatus(petS, 'segura', null);
+      return;
+    }
+    if(action === 'mark-lost'){
+      var petL = findPet(t.getAttribute('data-pet-id'));
+      if(petL && petL.status !== 'perdida') { state.sheet = {type:'mark-lost', pet:petL, loc:null, manual:false}; render(); }
+      return;
+    }
+    if(action === 'confirm-lost'){
+      if(state.sheet && state.sheet.loc) setPetStatus(state.sheet.pet, 'perdida', state.sheet.loc);
+      closeSheet();
+      return;
+    }
+    if(action === 'toggle-manual'){
+      state.sheet.manual = !state.sheet.manual; render(); return;
+    }
+    if(action === 'get-location'){
+      var btnLabel = t.textContent;
+      t.disabled = true; t.innerHTML = '<span class="spinner"></span> Ubicando…';
+      getLocation().then(function(loc){
+        if(state.sheet) state.sheet.loc = loc;
+        render();
+      })['catch'](function(){
+        showToast('No pudimos obtener tu ubicación automáticamente. Probá con la opción manual.');
+        if(state.sheet) state.sheet.manual = true;
+        render();
+      });
+      return;
+    }
+    if(action === 'save-manual-location'){
+      var latEl = document.getElementById('man-lat'), lngEl = document.getElementById('man-lng');
+      var lat = parseFloat(latEl.value), lng = parseFloat(lngEl.value);
+      if(isNaN(lat) || isNaN(lng)){ showToast('Ingresá latitud y longitud válidas.'); return; }
+      if(state.sheet) state.sheet.loc = {lat:lat, lng:lng};
+      render();
+      return;
+    }
+    if(action === 'pick-photo'){
+      var targetId = t.getAttribute('data-photo-target') || 'pet-photo-input';
+      var input = document.getElementById(targetId);
+      if(input) input.click();
+      return;
+    }
+    if(action === 'remove-existing-photo'){
+      var idxE = parseInt(t.getAttribute('data-index'),10);
+      if(state.sheet && state.sheet.existingPhotos) state.sheet.existingPhotos.splice(idxE,1);
+      updatePhotoGrid();
+      return;
+    }
+    if(action === 'remove-new-photo'){
+      var idxN = parseInt(t.getAttribute('data-index'),10);
+      if(state.sheet && state.sheet.newPhotos) state.sheet.newPhotos.splice(idxN,1);
+      updatePhotoGrid();
+      return;
+    }
+    if(t.id === 'backdrop' && e.target.id === 'backdrop'){ closeSheet(); return; }
+  });
+
+  document.addEventListener('submit', function(e){
+    if(e.target.id === 'auth-form'){
+      e.preventDefault();
+      var isRegister = state.authView === 'register';
+      var email = document.getElementById('au-email').value.trim();
+      var password = document.getElementById('au-password').value;
+      var nameEl = document.getElementById('au-name');
+      var name = nameEl ? nameEl.value.trim() : '';
+      if(!email || !password || (isRegister && !name)){
+        state.authError = 'Completá todos los campos.'; render(); return;
+      }
+      var btn = document.getElementById('auth-submit-btn');
+      if(btn){ btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (isRegister ? 'Creando cuenta…' : 'Entrando…'); }
+      var path = isRegister ? '/api/auth/register' : '/api/auth/login';
+      var payload = isRegister ? {email:email, password:password, name:name} : {email:email, password:password};
+      fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}).then(function(res){
+        return res.json().then(function(body){
+          if(!res.ok) throw new Error(body.error || 'No se pudo completar la acción.');
+          return body;
+        });
+      }).then(function(body){
+        afterLogin(body.user, body.token);
+      })['catch'](function(err){
+        state.authError = err.message || 'No se pudo completar la acción.';
+        render();
+      });
+      return;
+    }
+    if(e.target.id === 'report-form'){
+      e.preventDefault();
+      var s = state.sheet;
+      if(!s.loc){ showToast('Primero indicá dónde la viste.'); return; }
+      var note = document.getElementById('rep-note').value.trim();
+      var name = document.getElementById('rep-name').value.trim();
+      var phone = document.getElementById('rep-phone').value.trim();
+      submitSighting(s.pet, s.loc, note, name, phone);
+      return;
+    }
+    if(e.target.id === 'pet-form'){
+      e.preventDefault();
+      var s2 = state.sheet;
+      var form = {
+        name: document.getElementById('pf-name').value.trim(),
+        species: document.getElementById('pf-species').value,
+        size: document.getElementById('pf-size').value,
+        breed: document.getElementById('pf-breed').value.trim(),
+        color: document.getElementById('pf-color').value.trim(),
+        description: document.getElementById('pf-desc').value.trim(),
+        contactName: document.getElementById('pf-cname').value.trim(),
+        contactPhone: document.getElementById('pf-cphone').value.trim(),
+        contactNote: document.getElementById('pf-cnote').value.trim(),
+        existingPhotos: s2.existingPhotos || [],
+        newPhotoFiles: (s2.newPhotos || []).map(function(np){ return np.file; })
+      };
+      var errBox = document.getElementById('pet-form-error');
+      if(!form.name){
+        if(errBox){ errBox.textContent = 'Che, falta el nombre de tu mascota.'; errBox.style.display='block'; }
+        return;
+      }
+      if(errBox) errBox.style.display='none';
+      console.log('Huellas: guardando ficha…', form.name, 'db disponible:', !!state.db);
+      savePet(form, s2.pet);
+      return;
+    }
+    if(e.target.id === 'contact-form'){
+      e.preventDefault();
+      var s3 = state.sheet;
+      var cform = {
+        category: document.getElementById('cf-category').value,
+        name: document.getElementById('cf-name').value.trim(),
+        phone: document.getElementById('cf-phone').value.trim(),
+        address: document.getElementById('cf-address').value.trim(),
+        notes: document.getElementById('cf-notes').value.trim()
+      };
+      var cErrBox = document.getElementById('contact-form-error');
+      if(!cform.name){
+        if(cErrBox){ cErrBox.textContent = 'Falta el nombre del contacto.'; cErrBox.style.display='block'; }
+        return;
+      }
+      if(cErrBox) cErrBox.style.display='none';
+      saveContact(cform, s3.contact);
+      return;
+    }
+    if(e.target.id === 'business-form'){
+      e.preventDefault();
+      var s4 = state.sheet;
+      var bform = {
+        category: document.getElementById('bf-category').value,
+        name: document.getElementById('bf-name').value.trim(),
+        responsibleName: document.getElementById('bf-responsible').value.trim(),
+        email: document.getElementById('bf-email').value.trim(),
+        phone: document.getElementById('bf-phone').value.trim(),
+        description: document.getElementById('bf-desc').value.trim(),
+        photoFile: s4.pendingPhotoFile || null
+      };
+      var bErrBox = document.getElementById('business-form-error');
+      var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bform.email);
+      if(!bform.name || !bform.responsibleName || !emailOk){
+        if(bErrBox){
+          bErrBox.textContent = !bform.name ? 'Falta el nombre del establecimiento.' : !bform.responsibleName ? 'Falta el nombre del responsable.' : 'Ingresá un email válido.';
+          bErrBox.style.display='block';
+        }
+        return;
+      }
+      if(bErrBox) bErrBox.style.display='none';
+      saveBusiness(bform, s4.business);
+      return;
+    }
+    if(e.target.id === 'adoption-form'){
+      e.preventDefault();
+      var s5 = state.sheet;
+      var aform = {
+        name: document.getElementById('af-name').value.trim(),
+        species: document.getElementById('af-species').value,
+        age: document.getElementById('af-age').value.trim(),
+        breed: document.getElementById('af-breed').value.trim(),
+        description: document.getElementById('af-desc').value.trim(),
+        neutered: document.getElementById('af-neutered').checked,
+        vaccinated: document.getElementById('af-vaccinated').checked,
+        dewormed: document.getElementById('af-dewormed').checked,
+        contactName: document.getElementById('af-cname').value.trim(),
+        contactPhone: document.getElementById('af-cphone').value.trim(),
+        existingPhotos: s5.existingPhotos || [],
+        newPhotoFiles: (s5.newPhotos || []).map(function(np){ return np.file; })
+      };
+      var aErrBox = document.getElementById('adoption-form-error');
+      if(!aform.description){
+        if(aErrBox){ aErrBox.textContent = 'Contanos algo sobre la mascota en "Características".'; aErrBox.style.display='block'; }
+        return;
+      }
+      if(aErrBox) aErrBox.style.display='none';
+      saveAdoption(aform, s5.adoption);
+      return;
+    }
+    if(e.target.id === 'donation-settings-form'){
+      e.preventDefault();
+      var dform = {
+        mpAlias: document.getElementById('ds-mp').value.trim(),
+        paypalAlias: document.getElementById('ds-pp').value.trim()
+      };
+      saveDonationConfig(dform);
+      return;
+    }
+  });
+
+  /* ============ BOOT ============ */
+  render();
+  tryResumeSession();
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function(){ /* no-op: la app sigue funcionando igual */ });
+    });
+  }
+</script>
+</body>
+</html>
