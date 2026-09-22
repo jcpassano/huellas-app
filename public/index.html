@@ -133,9 +133,14 @@
   .menu-card{display:flex; flex-direction:column; align-items:flex-start; gap:8px; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px; box-shadow:var(--shadow); font-family:var(--font-body);}
   .menu-card-hero{grid-column:1/-1; flex-direction:row; align-items:center; gap:14px; background:var(--accent-soft); border-color:var(--accent-soft);}
   .menu-card-hero .menu-icon{background:var(--surface); margin-bottom:0;}
+  .menu-card-alert{grid-column:1/-1; flex-direction:row; align-items:center; gap:14px; background:var(--alert); border-color:var(--alert); box-shadow:0 6px 18px rgba(201,67,46,.32);}
+  .menu-card-alert .menu-icon{background:rgba(255,255,255,.22); color:#fff; margin-bottom:0;}
+  .menu-card-alert .menu-title{color:#fff; font-size:16.5px;}
+  .menu-card-alert .menu-sub{color:rgba(255,255,255,.85);}
   .menu-icon{width:38px; height:38px; border-radius:10px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--accent-ink); flex:none; margin-bottom:2px;}
   .menu-icon svg{width:19px; height:19px;}
   .menu-card-hero .menu-icon svg{width:22px; height:22px;}
+  .menu-card-alert .menu-icon svg{width:22px; height:22px;}
   .menu-title{font-weight:700; font-size:14.5px; color:var(--ink); line-height:1.25;}
   .menu-card-hero .menu-title{font-size:16px;}
   .menu-sub{font-size:12.5px; color:var(--ink-soft);}
@@ -840,8 +845,8 @@
         name: form.name, species: form.species, breed: form.breed||'', color: form.color||'', size: form.size||'',
         description: form.description||'',
         contactName: form.contactName||'', contactPhone: form.contactPhone||'', contactNote: form.contactNote||'',
-        status: existing ? existing.status : 'segura',
-        lastSeen: existing ? (existing.lastSeen||null) : null,
+        status: existing ? existing.status : (form.lostIntent ? 'perdida' : 'segura'),
+        lastSeen: existing ? (existing.lastSeen||null) : ((form.lostIntent && form.loc) ? {lat:form.loc.lat, lng:form.loc.lng, timestamp: nowIso()} : null),
         createdAt: existing ? existing.createdAt : nowIso(),
         updatedAt: nowIso()
       }, photos);
@@ -852,7 +857,7 @@
       upsertMyPet(fullPet);
       upsertLostPet(fullPet);
       render();
-      showToast(existing ? 'Ficha actualizada.' : 'Ficha creada. Ya la ves en "Mis mascotas".');
+      showToast(existing ? 'Ficha actualizada.' : (form.lostIntent ? (form.name + ' fue publicada como perdida. La comunidad ya puede verla.') : 'Ficha creada. Ya la ves en "Mis mascotas".'));
       closeSheet();
     })['catch'](function(err){
       console.warn('Huellas: no se pudo guardar la ficha', err);
@@ -1152,6 +1157,12 @@
     if(!state.db){
       html += '<div class="demo-banner">' + icon('info') + '<span>Estás viendo una <strong>vista de ejemplo</strong>. Abrí esta página desde tu cuenta de Claude para usar todo con datos reales.</span></div>';
     }
+
+    html += '<button type="button" class="menu-card menu-card-alert" data-action="report-lost-shortcut">' +
+      '<div class="menu-icon">' + icon('paw') + '</div>' +
+      '<div><div class="menu-title">Perdí mi mascota</div>' +
+      '<div class="menu-sub">Reportala ahora, es lo primero que hay que hacer</div></div>' +
+    '</button>';
 
     html += '<button type="button" class="menu-card menu-card-hero" data-action="go-lost-list">' +
       '<div class="menu-icon">' + icon('pin') + '</div>' +
@@ -1756,8 +1767,9 @@
       , true);
     } else if(s.type==='pet'){
       var p = s.pet || {};
-      html = modalWrap(s.pet ? 'Editar ficha' : 'Nueva ficha de mascota',
+      html = modalWrap(s.lostIntent ? 'Reportar mascota perdida' : (s.pet ? 'Editar ficha' : 'Nueva ficha de mascota'),
         (!state.db ? '<div class="demo-banner" style="border-color:var(--alert);">'+icon('info')+'<span><strong>Ojo:</strong> esta vista no tiene conexión a la base de datos real, así que lo que cargues acá no se va a guardar.</span></div>' : '') +
+        (s.lostIntent ? '<div class="tip-card" style="background:var(--alert-soft); border-color:var(--alert);"><div class="tip-icon" style="color:var(--alert-ink);">'+icon('paw')+'</div><div class="tip-body"><div class="tip-text">Se va a publicar como <strong>perdida</strong> apenas la guardes, así la comunidad ya puede ayudarte a buscarla.</div></div></div>' : '') +
         '<form id="pet-form" novalidate>' +
           '<div id="pet-form-error" class="hint" style="display:none;color:var(--alert);font-weight:600;margin-bottom:10px;"></div>' +
           '<div class="field" style="margin-top:0">' +
@@ -1780,12 +1792,13 @@
             '<div class="field"><label for="pf-color">Color</label><input type="text" id="pf-color" value="'+esc(p.color||'')+'"></div>' +
           '</div>' +
           '<div class="field"><label for="pf-desc">Señas particulares</label><textarea id="pf-desc" placeholder="Collar, manchas, cicatrices, temperamento…">'+esc(p.description||'')+'</textarea></div>' +
+          (s.lostIntent ? locationField(s) : '') +
           '<div class="field"><label for="pf-cname">Tu nombre de contacto</label><input type="text" id="pf-cname" value="'+esc(p.contactName||'')+'"></div>' +
           '<div class="field"><label for="pf-cphone">Teléfono de contacto (opcional)</label><input type="tel" id="pf-cphone" value="'+esc(p.contactPhone||'')+'" placeholder="11 5555-5555"></div>' +
           '<div class="field"><label for="pf-cnote">Nota de contacto</label><input type="text" id="pf-cnote" value="'+esc(p.contactNote||'')+'" placeholder="Ej: preferís WhatsApp"></div>' +
           '<div class="sheet-footer">' +
             '<button type="button" class="btn btn-ghost" data-action="close-sheet">Cancelar</button>' +
-            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.pet ? 'Guardar cambios' : 'Crear ficha')+'</button>' +
+            '<button type="submit" class="btn btn-accent">'+icon('check')+(s.lostIntent ? 'Publicar como perdida' : (s.pet ? 'Guardar cambios' : 'Crear ficha'))+'</button>' +
           '</div>' +
         '</form>'
       , true);
@@ -2065,6 +2078,7 @@
     if(action === 'go-lost-list'){ state.homeView = 'lost'; render(); return; }
     if(action === 'go-home-menu'){ state.homeView = null; render(); return; }
     if(action === 'add-pet-shortcut'){ state.tab = 'mine'; state.sheet = {type:'pet', pet:null, existingPhotos:[], newPhotos:[]}; render(); return; }
+    if(action === 'report-lost-shortcut'){ state.tab = 'mine'; state.sheet = {type:'pet', pet:null, existingPhotos:[], newPhotos:[], lostIntent:true, loc:null, manual:false}; render(); return; }
     if(action === 'go-adoptions'){ state.tab = 'directory'; state.contactFilter = 'adopciones'; render(); return; }
     if(action === 'go-directory'){ state.tab = 'directory'; state.contactFilter = 'all'; render(); return; }
     if(action === 'go-community'){ state.tab = 'community'; render(); return; }
@@ -2328,7 +2342,9 @@
         contactPhone: document.getElementById('pf-cphone').value.trim(),
         contactNote: document.getElementById('pf-cnote').value.trim(),
         existingPhotos: s2.existingPhotos || [],
-        newPhotoFiles: (s2.newPhotos || []).map(function(np){ return np.file; })
+        newPhotoFiles: (s2.newPhotos || []).map(function(np){ return np.file; }),
+        lostIntent: !!s2.lostIntent,
+        loc: s2.loc || null
       };
       var errBox = document.getElementById('pet-form-error');
       if(!form.name){
