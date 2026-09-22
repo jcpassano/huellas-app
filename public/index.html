@@ -390,6 +390,16 @@
   function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
   function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }catch(e){} }
 
+  /* ============ INSTALAR EN EL CELULAR (PWA) ============ */
+  var INSTALL_DISMISS_KEY = 'huellas_install_dismissed';
+  function isStandaloneMode(){
+    try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+    catch(e){ return false; }
+  }
+  function isIOSDevice(){ return /iphone|ipad|ipod/i.test(navigator.userAgent || ''); }
+  function getInstallDismissed(){ try{ return localStorage.getItem(INSTALL_DISMISS_KEY) === '1'; }catch(e){ return false; } }
+  function dismissInstallBanner(){ try{ localStorage.setItem(INSTALL_DISMISS_KEY, '1'); }catch(e){} }
+
   function apiFetch(path, opts){
     opts = opts || {};
     var headers = Object.assign({}, opts.headers||{});
@@ -648,6 +658,8 @@
     donationConfig:{mpAlias:'', paypalAlias:'', adminId:null},
     donationConfigLoaded:false,
     notifPermission:(('Notification' in window) ? Notification.permission : 'unsupported'),
+    installPromptEvent:null,
+    installDismissed:getInstallDismissed(),
     sheet:null /* {type:'report'|'pet'|'contact'|'business'|'adoption'|'donate'|'info'|'confirm-delete', ...} */
   };
 
@@ -1179,7 +1191,33 @@
     html += menuCard('open-donate', 'heart', 'Colaborar con Huellas', 'Sumá tu aporte');
     html += '</div>';
 
+    html += renderInstallBanner();
+
     return html;
+  }
+  function renderInstallBanner(){
+    if(state.installDismissed || isStandaloneMode()) return '';
+    var closeBtn = '<button type="button" class="icon-btn" data-action="dismiss-install-banner" aria-label="Cerrar" style="flex:none;">'+icon('x')+'</button>';
+    if(state.installPromptEvent){
+      return '<div class="tip-card" style="margin-top:16px;">' +
+        '<div class="tip-icon">' + icon('house') + '</div>' +
+        '<div class="tip-body">' +
+          '<div class="tip-label">Instalá Huellas</div>' +
+          '<div class="tip-text">Agregala a tu pantalla de inicio y abrila como una app, sin tener que buscar el link cada vez.</div>' +
+          '<button type="button" class="btn btn-accent btn-sm" style="margin-top:10px;" data-action="install-app">'+icon('check')+'Instalar app</button>' +
+        '</div>' + closeBtn +
+      '</div>';
+    }
+    if(isIOSDevice()){
+      return '<div class="tip-card" style="margin-top:16px;">' +
+        '<div class="tip-icon">' + icon('house') + '</div>' +
+        '<div class="tip-body">' +
+          '<div class="tip-label">Instalá Huellas</div>' +
+          '<div class="tip-text">Tocá el ícono de compartir de Safari y elegí <strong>"Agregar a inicio"</strong>. Te queda el ícono en la pantalla, como una app.</div>' +
+        '</div>' + closeBtn +
+      '</div>';
+    }
+    return '';
   }
   function menuCard(action, iconName, title, sub){
     return '<button type="button" class="menu-card" data-action="'+action+'">' +
@@ -2083,6 +2121,16 @@
     if(action === 'go-directory'){ state.tab = 'directory'; state.contactFilter = 'all'; render(); return; }
     if(action === 'go-community'){ state.tab = 'community'; render(); return; }
     if(action === 'go-mine'){ state.tab = 'mine'; render(); return; }
+    if(action === 'install-app'){
+      var evt = state.installPromptEvent;
+      if(!evt) return;
+      state.installPromptEvent = null;
+      render();
+      evt.prompt();
+      evt.userChoice['catch'](function(){})['then'](function(){ /* no-op: el navegador maneja el resultado */ });
+      return;
+    }
+    if(action === 'dismiss-install-banner'){ state.installDismissed = true; dismissInstallBanner(); render(); return; }
 
     if(action === 'use-location'){
       t.disabled = true; t.textContent = 'Activando…';
@@ -2435,6 +2483,18 @@
       saveDonationConfig(dform);
       return;
     }
+  });
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    state.installPromptEvent = e;
+    render();
+  });
+  window.addEventListener('appinstalled', function(){
+    state.installPromptEvent = null;
+    state.installDismissed = true;
+    dismissInstallBanner();
+    render();
   });
 
   /* ============ BOOT ============ */
